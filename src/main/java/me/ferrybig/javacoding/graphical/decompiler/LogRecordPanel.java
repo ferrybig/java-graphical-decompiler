@@ -32,7 +32,12 @@ public class LogRecordPanel extends javax.swing.JPanel {
 	public void setRecord(LogRecord record) {
 		this.record = record;
 		date.setText(format.format(record.getMillis()));
-		message.setText(record.getMessage());
+		if(record.getParameters() != null && record.getParameters().length > 0) {
+			message.setText(java.text.MessageFormat.format(
+					record.getMessage(), record.getParameters()));
+		} else {
+			message.setText(record.getMessage());
+		}
 		String txt;
 		if(record.getThrown() == null) {
 			txt = "";
