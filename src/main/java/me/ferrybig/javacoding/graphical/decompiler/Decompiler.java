@@ -114,7 +114,7 @@ public class Decompiler {
 								}
 								read++;
 								String decompiled = line.substring("Processing ".length()).replace('.', '/');
-								this.setProgress(read * 100 / total);
+								this.setProgress(Math.min(read * 100 / total, 99));
 								pub = new FilePair(decompiled + ".class", new File(tmp + "/" + decompiled + ".java").toURI().toURL());
 								// Calculate progress using decompileInsteadOfCopy size
 							}
