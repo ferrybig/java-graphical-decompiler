@@ -8,7 +8,6 @@ package me.ferrybig.javacoding.graphical.decompiler.media;
 import java.net.URL;
 import javax.swing.Icon;
 import javax.swing.JComponent;
-import me.ferrybig.javacoding.graphical.decompiler.Config;
 
 /**
  *
@@ -20,6 +19,6 @@ public interface CodePane {
 
 	public JComponent getContent();
 
-	public Icon getIcon();
+	public Icon getIcon(boolean hasSources);
 
 }

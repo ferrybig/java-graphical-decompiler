@@ -20,6 +20,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.KeyStroke;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 
 /**
@@ -94,9 +95,10 @@ public class MainForm extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void openButtonActionPerformed(ActionEvent evt) {//GEN-FIRST:event_openButtonActionPerformed
-        int f = files.showOpenDialog(this);
-		if(f == JFileChooser.CANCEL_OPTION)
+		int f = files.showOpenDialog(this);
+		if (f == JFileChooser.CANCEL_OPTION) {
 			return;
+		}
 		this.mainBody1.openFile(files.getSelectedFile());
     }//GEN-LAST:event_openButtonActionPerformed
 
@@ -110,19 +112,8 @@ public class MainForm extends javax.swing.JFrame {
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
 		 */
 		try {
-			for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-				if ("Nimbus".equals(info.getName())) {
-					javax.swing.UIManager.setLookAndFeel(info.getClassName());
-					break;
-				}
-			}
-		} catch (ClassNotFoundException ex) {
-			java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-		} catch (InstantiationException ex) {
-			java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-		} catch (IllegalAccessException ex) {
-			java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-		} catch (javax.swing.UnsupportedLookAndFeelException ex) {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
 			java.util.logging.Logger.getLogger(MainForm.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
 		}
 		//</editor-fold>
@@ -132,7 +123,7 @@ public class MainForm extends javax.swing.JFrame {
 			MainForm mainForm = new MainForm();
 			mainForm.setVisible(true);
 			LOG.info("Started fully!");
-			for(String s : args) {
+			for (String s : args) {
 				mainForm.mainBody1.openFile(new File(s));
 			}
 		});

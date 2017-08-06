@@ -6,14 +6,13 @@
 package me.ferrybig.javacoding.graphical.decompiler;
 
 import java.io.File;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePane;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePaneConfig;
-import me.ferrybig.javacoding.graphical.decompiler.media.LoadingPane;
+import me.ferrybig.javacoding.graphical.decompiler.media.JavaPane;
 import me.ferrybig.javacoding.graphical.decompiler.media.TextPane;
 
 /**
@@ -21,21 +20,21 @@ import me.ferrybig.javacoding.graphical.decompiler.media.TextPane;
  * @author Fernando
  */
 public class Config {
+
 	private final Map<String, Function<CodePaneConfig, CodePane>> mediaTypes = new HashMap<>();
 	private final Map<String, String> fileTypes = new LinkedHashMap<>();
 	private final File crf = new File("cfr_0_119.jar");
-	
+
 	public Config() {
 		mediaTypes.put("text", TextPane::new);
-		mediaTypes.put("java", TextPane::new);
-		fileTypes.put(".java", "java");
-		fileTypes.put(".class", "java");
+		mediaTypes.put("text/java", JavaPane::new);
+		fileTypes.put(".java", "text/java");
+		fileTypes.put(".class", "text/java");
 		fileTypes.put(".yml", "text");
 		fileTypes.put(".txt", "text");
 		fileTypes.put(".properties", "text");
 		fileTypes.put(".csv", "text");
 		fileTypes.put(".xml", "text");
-		fileTypes.put(".java", "text");
 	}
 
 	public Map<String, Function<CodePaneConfig, CodePane>> getMediaTypes() {

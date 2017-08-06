@@ -39,7 +39,7 @@ public class LoadingPane extends javax.swing.JPanel implements CodePane {
 	}
 
 	@Override
-	public Icon getIcon() {
+	public Icon getIcon(boolean hasSources) {
 		return null;
 	}
 
@@ -67,7 +67,6 @@ public class LoadingPane extends javax.swing.JPanel implements CodePane {
         jLabel1.setText("Still decompiling...");
         add(jLabel1, new GridBagConstraints());
     }// </editor-fold>//GEN-END:initComponents
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JLabel jLabel1;

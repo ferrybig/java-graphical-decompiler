@@ -11,15 +11,15 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.LinkedList;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import javax.swing.AbstractListModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JList;
 import javax.swing.JScrollPane;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import javax.swing.ListCellRenderer;
 import javax.swing.SwingUtilities;
 
@@ -41,13 +41,13 @@ public class DebugPane extends javax.swing.JPanel {
 
 		@Override
 		public void publish(LogRecord record) {
-			if(SwingUtilities.isEventDispatchThread()) {
+			if (SwingUtilities.isEventDispatchThread()) {
 				model.addRecord(record);
 			} else {
 				record.getSourceClassName();
 				SwingUtilities.invokeLater(() -> model.addRecord(record));
 			}
-			
+
 		}
 	};
 
@@ -126,7 +126,6 @@ public class DebugPane extends javax.swing.JPanel {
     private void clearButtonActionPerformed(ActionEvent evt) {//GEN-FIRST:event_clearButtonActionPerformed
 		this.model.clear();
     }//GEN-LAST:event_clearButtonActionPerformed
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JButton clearButton;

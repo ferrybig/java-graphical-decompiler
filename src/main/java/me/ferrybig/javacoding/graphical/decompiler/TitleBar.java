@@ -9,7 +9,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
-import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 
@@ -22,7 +21,7 @@ public class TitleBar extends javax.swing.JPanel {
 	public TitleBar() {
 		initComponents();
 	}
-	
+
 	public TitleBar(String title) {
 		this();
 		setTitle(title);
@@ -77,7 +76,6 @@ public class TitleBar extends javax.swing.JPanel {
         gridBagConstraints.weightx = 0.1;
         add(title, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JButton close;

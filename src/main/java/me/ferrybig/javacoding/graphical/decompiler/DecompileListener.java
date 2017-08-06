@@ -12,14 +12,14 @@ import java.net.URL;
  * @author Fernando
  */
 public interface DecompileListener {
-	
+
 	public void fileFound(String name);
-	
+
 	public void fileDecompiled(String name, URL url);
-	
+
 	public void decompileDone();
-	
+
 	public void exceptionCaugth(Throwable ex);
-	
+
 	public void setProgress(int progress);
 }

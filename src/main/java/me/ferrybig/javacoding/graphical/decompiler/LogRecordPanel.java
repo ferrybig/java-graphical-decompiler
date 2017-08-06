@@ -17,7 +17,7 @@ import java.util.logging.LogRecord;
 public class LogRecordPanel extends javax.swing.JPanel {
 
 	private LogRecord record;
-	
+
 	/**
 	 * Creates new form LogRecordPanel
 	 */
@@ -32,14 +32,14 @@ public class LogRecordPanel extends javax.swing.JPanel {
 	public void setRecord(LogRecord record) {
 		this.record = record;
 		date.setText(format.format(record.getMillis()));
-		if(record.getParameters() != null && record.getParameters().length > 0) {
+		if (record.getParameters() != null && record.getParameters().length > 0) {
 			message.setText(java.text.MessageFormat.format(
 					record.getMessage(), record.getParameters()));
 		} else {
 			message.setText(record.getMessage());
 		}
 		String txt;
-		if(record.getThrown() == null) {
+		if (record.getThrown() == null) {
 			txt = "";
 		} else {
 			StringWriter writer = new StringWriter();
@@ -48,7 +48,7 @@ public class LogRecordPanel extends javax.swing.JPanel {
 		}
 		exception.setText(txt);
 	}
-	
+
 	private final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
 	/**
@@ -91,7 +91,6 @@ public class LogRecordPanel extends javax.swing.JPanel {
         gridBagConstraints.gridy = 2;
         add(exception, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel date;

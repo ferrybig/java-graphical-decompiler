@@ -21,6 +21,7 @@ import javax.swing.Timer;
 public class MainBody extends javax.swing.JPanel {
 
 	private Config config;
+
 	public MainBody() {
 		initComponents();
 		Logger.getGlobal().getParent().addHandler(debugPane.getHandler());
@@ -33,7 +34,7 @@ public class MainBody extends javax.swing.JPanel {
 	public void setConfig(Config config) {
 		this.config = config;
 	}
-	
+
 	public void openFile(File file) {
 		CodeOverview codeOverview = new CodeOverview(file.getAbsolutePath(), config);
 		Decompiler decompiler = new Decompiler(file, codeOverview, config);
@@ -82,7 +83,6 @@ public class MainBody extends javax.swing.JPanel {
         gridBagConstraints.weighty = 0.1;
         add(mainPane, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private DebugPane debugPane;

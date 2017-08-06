@@ -44,7 +44,7 @@ public class TextPane extends javax.swing.JPanel implements CodePane {
 	}
 
 	@Override
-	public Icon getIcon() {
+	public Icon getIcon(boolean hasSources) {
 		return null;
 	}
 
@@ -72,7 +72,6 @@ public class TextPane extends javax.swing.JPanel implements CodePane {
         gridBagConstraints.weighty = 0.1;
         add(jScrollPane1, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JScrollPane jScrollPane1;

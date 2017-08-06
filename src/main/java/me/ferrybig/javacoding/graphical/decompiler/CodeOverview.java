@@ -51,6 +51,8 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
 	@Override
 	public void decompileDone() {
+		this.progress.setValue(100);
+		this.progress.setString("Done!");
 		this.remove(progressPanel);
 	}
 
@@ -101,13 +103,13 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		fileFound(file);
 		this.progress.setString("Decompiled: " + file);
 		knownFiles.put(file, url);
-		if(openFiles.containsKey(file)) {
+		if (openFiles.containsKey(file)) {
 			CodePane old = openFiles.get(file);
 			CodePane now = old.contentUpdated(url);
-			if(old != now && now != null) {
+			if (old != now && now != null) {
 				int index = tabs.indexOfTab(file);
 				tabs.setComponentAt(index, now.getContent());
-				tabs.setIconAt(index, now.getIcon());
+				tabs.setIconAt(index, now.getIcon(true));
 			}
 		}
 	}
@@ -193,8 +195,8 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 					assert knownFiles.containsKey(total);
 					URL url = knownFiles.get(total);
 					CodePane page = new CodePaneConfig(total, url, config).createPane();
-					
-					tabs.addTab(total, page.getIcon(), page.getContent());
+
+					tabs.addTab(total, page.getIcon(url != null), page.getContent());
 					TitleBar titleBar = new TitleBar(part.getPart());
 					int index = tabs.indexOfTab(total);
 					tabs.setTabComponentAt(index, titleBar);
@@ -205,11 +207,10 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 					openFiles.put(total, page);
 					tabs.setSelectedIndex(index);
 				}
-				
+
 			}
 		}
     }//GEN-LAST:event_filesMousePressed
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JTree files;
@@ -229,10 +230,11 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		@Override
 		public int compareTo(PathPart o) {
 			int c = Boolean.compare(dir, o.dir);
-			if (c == 0)
+			if (c == 0) {
 				return part.compareToIgnoreCase(o.part);
-			else
+			} else {
 				return c;
+			}
 		}
 
 		public String getTotal() {

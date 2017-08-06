@@ -27,6 +27,7 @@ import javax.swing.SwingWorker;
  * @author Fernando
  */
 public class Decompiler {
+
 	private final File jarFile;
 	private final DecompileListener listener;
 	private final Config config;
@@ -37,16 +38,16 @@ public class Decompiler {
 		this.listener = listener;
 		this.config = config;
 		this.worker.addPropertyChangeListener(e -> {
-			if(e.getPropertyName().equals("progress")) {
+			if (e.getPropertyName().equals("progress")) {
 				listener.setProgress((int) e.getNewValue());
 			}
 		});
 	}
-	
+
 	public void start() {
 		worker.execute();
 	}
-	
+
 	private class Worker extends SwingWorker<Object, FilePair> {
 
 		@Override
@@ -54,16 +55,17 @@ public class Decompiler {
 			List<String> decompileInsteadOfCopy = new ArrayList<>();
 			List<String> cp = new ArrayList<>();
 			cp.add(System.getProperty("java.home") + "/lib/rt.jar");
-			try(JarFile j = new JarFile(jarFile))  {
+			try (JarFile j = new JarFile(jarFile)) {
 				Enumeration<JarEntry> entries = j.entries();
-				while(entries.hasMoreElements()) {
+				while (entries.hasMoreElements()) {
 					JarEntry entry = entries.nextElement();
-					if(entry.isDirectory())
+					if (entry.isDirectory()) {
 						continue;
+					}
 					String name = entry.getName();
 					URL url;
-					if(name.endsWith(".class")) {
-						if(name.contains("$")) {
+					if (name.endsWith(".class")) {
+						if (name.contains("$")) {
 							// Java subclass
 							continue;
 						}
@@ -72,13 +74,13 @@ public class Decompiler {
 						url = new URL("jar:" + jarFile.getAbsoluteFile().toURI().toURL() + "!/" + name);
 						LOG.log(Level.INFO, "Path: {0}", url);
 					}
-					if(url == null) {
+					if (url == null) {
 						decompileInsteadOfCopy.add(name);
 					}
 					this.publish(new FilePair(name, url));
 				}
 			}
-			if(!decompileInsteadOfCopy.isEmpty()) {
+			if (!decompileInsteadOfCopy.isEmpty()) {
 				Path tmp = Files.createTempDirectory(jarFile.getName());
 				tmp.toFile().deleteOnExit();
 				List<String> cmd = new ArrayList<>();
@@ -94,21 +96,22 @@ public class Decompiler {
 				Process p = builder.start();
 				try {
 					p.getOutputStream().close();
-					try(BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+					try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
 						String line;
 						int read = 0;
 						int total = decompileInsteadOfCopy.size();
-						
+
 						// This is needed because the processing lines "lagg" behind,
 						// they are printed when CFR starts processing the class, and
 						// not when its done processing the file.
 						FilePair pub = null;
-						
-						while((line = r.readLine()) != null) {
-							
+
+						while ((line = r.readLine()) != null) {
+
 							LOG.log(Level.INFO, "Read: {0}", line);
-							if(line.startsWith("Processing ")) {
-								if(pub != null) {
+							if (line.startsWith("Processing ")
+									&& !line.equals("Processing " + jarFile.getAbsolutePath() + " (use silent to silence)")) {
+								if (pub != null) {
 									this.publish(pub);
 									pub = null;
 								}
@@ -118,18 +121,18 @@ public class Decompiler {
 								pub = new FilePair(decompiled + ".class", new File(tmp + "/" + decompiled + ".java").toURI().toURL());
 								// Calculate progress using decompileInsteadOfCopy size
 							}
-							if(this.isCancelled()) {
+							if (this.isCancelled()) {
 								p.destroy();
 							}
 						}
-						if(pub != null) {
+						if (pub != null) {
 							this.publish(pub);
 						}
 					}
 				} finally {
 					p.destroy();
 				}
-				if(p.waitFor() != 0) {
+				if (p.waitFor() != 0) {
 					throw new IllegalStateException("Invalid exit state: " + p.exitValue());
 				}
 			}
@@ -139,20 +142,20 @@ public class Decompiler {
 		@Override
 		protected void done() {
 			super.done();
-			try{
+			try {
 				this.get();
-			} catch(ExecutionException | InterruptedException e) {
+			} catch (ExecutionException | InterruptedException e) {
 				LOG.log(Level.WARNING, "Exception during decompilation:", e);
 				listener.exceptionCaugth(e);
-			} 
+			}
 			listener.decompileDone();
 		}
 
 		@Override
 		protected void process(List<FilePair> chunks) {
 			super.process(chunks);
-			for(FilePair p : chunks) {
-				if(p.getUrl() == null) {
+			for (FilePair p : chunks) {
+				if (p.getUrl() == null) {
 					listener.fileFound(p.getName());
 					LOG.log(Level.FINE, "Render decompiling: {0}", p);
 				} else {
@@ -161,14 +164,15 @@ public class Decompiler {
 				}
 			}
 		}
-		
+
 	}
-	
+
 	public void stop() {
 		this.worker.cancel(true);
 	}
-	
+
 	private class FilePair {
+
 		private final String name;
 		private final URL url;
 
@@ -189,7 +193,7 @@ public class Decompiler {
 		public String toString() {
 			return "FilePair{" + "name=" + name + ", url=" + url + '}';
 		}
-		
+
 	}
 	private static final Logger LOG = Logger.getLogger(Decompiler.class.getName());
 }
