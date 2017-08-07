@@ -5,23 +5,12 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler.media;
 
-import java.awt.Font;
+import me.ferrybig.javacoding.graphical.decompiler.StringLoader;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.GroupLayout;
 import javax.swing.Icon;
 import javax.swing.JComponent;
-import javax.swing.JScrollPane;
-import javax.swing.JTextPane;
-import javax.swing.SwingWorker;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
@@ -33,7 +22,7 @@ public class JavaPane extends javax.swing.JPanel implements CodePane {
 
 	public JavaPane(CodePaneConfig conf) {
 		initComponents();
-		readText(conf.getUrl());
+		new StringLoader(conf.getUrl(), textPane::setText, e -> textPane.setText("// " + e)).execute();
 	}
 
 	@Override
@@ -51,47 +40,6 @@ public class JavaPane extends javax.swing.JPanel implements CodePane {
 		return null;
 	}
 
-	private void readText(URL in) {
-		new SwingWorker<Void, char[]>() {
-
-			StringBuilder build = new StringBuilder();
-
-			@Override
-			protected void process(List<char[]> chunks) {
-				for (char[] c : chunks) {
-					build.append(c);
-				}
-				textPane.setText(build.toString());
-			}
-
-			@Override
-			protected Void doInBackground() throws Exception {
-				try (InputStream i = in.openStream()) {
-					BufferedReader r = new BufferedReader(new InputStreamReader(i));
-					char[] c = new char[1024 * 32];
-					int read;
-					int readOffset = 0;
-					do {
-						read = r.read(c, readOffset, c.length - readOffset);
-						readOffset += read;
-						if (readOffset * 2 > c.length) {
-							char[] copy = new char[readOffset];
-							System.arraycopy(c, 0, copy, 0, readOffset);
-							this.publish(new char[][]{(char[]) copy});
-							readOffset = 0;
-						}
-					} while (read > 0);
-					if (readOffset > 0) {
-						char[] copy = new char[readOffset];
-						System.arraycopy(c, 0, copy, 0, readOffset);
-						this.publish(new char[][]{(char[]) copy});
-					}
-				}
-				return null;
-			}
-		}.execute();
-	}
-
 	/**
 	 * This method is called from within the constructor to initialize the form.
 	 * WARNING: Do NOT modify this code. The content of this method is always
@@ -107,9 +55,14 @@ public class JavaPane extends javax.swing.JPanel implements CodePane {
 
         setLayout(new GridBagLayout());
 
+        scrollPane.setFoldIndicatorEnabled(true);
+        scrollPane.setLineNumbersEnabled(true);
+
+        textPane.setEditable(false);
         textPane.setColumns(20);
         textPane.setRows(5);
         textPane.setTabSize(4);
+        textPane.setText("package we.are.still.loading;\n\n// Loading file...\n\npublic class Loading {\n\n\tpublic static void main(String ... args) {\n\t\tSystem.out.println(\"We are still loading...\");\n\t}\n\n}"); // NOI18N
         textPane.setMarginLineEnabled(true);
         textPane.setPaintMatchedBracketPair(true);
         textPane.setPaintTabLines(true);

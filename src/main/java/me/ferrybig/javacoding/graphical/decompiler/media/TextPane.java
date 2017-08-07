@@ -17,6 +17,7 @@ import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
+import me.ferrybig.javacoding.graphical.decompiler.StringLoader;
 
 /**
  *
@@ -26,11 +27,7 @@ public class TextPane extends javax.swing.JPanel implements CodePane {
 
 	public TextPane(CodePaneConfig conf) {
 		initComponents();
-		try {
-			jTextPane1.setPage(conf.getUrl());
-		} catch (IOException ex) {
-			Logger.getLogger(TextPane.class.getName()).log(Level.SEVERE, null, ex);
-		}
+		new StringLoader(conf.getUrl(), jTextPane1::setText, e -> jTextPane1.setText("Error: " + e.toString())).execute();
 	}
 
 	@Override
