@@ -14,12 +14,15 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.util.logging.Logger;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 
@@ -49,6 +52,8 @@ public class MainForm extends javax.swing.JFrame {
 
         files = new JFileChooser();
         mainBody1 = new MainBody();
+        jToolBar1 = new JToolBar();
+        jButton1 = new JButton();
         mainMenu = new JMenuBar();
         fileMenu = new JMenu();
         openButton = new JMenuItem();
@@ -62,10 +67,31 @@ public class MainForm extends javax.swing.JFrame {
         setSize(new Dimension(1024, 768));
         getContentPane().setLayout(new GridBagLayout());
         gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 0.1;
         gridBagConstraints.weighty = 0.1;
         getContentPane().add(mainBody1, gridBagConstraints);
+
+        jToolBar1.setFloatable(false);
+        jToolBar1.setRollover(true);
+
+        jButton1.setText("Open");
+        jButton1.setFocusable(false);
+        jButton1.setHorizontalTextPosition(SwingConstants.CENTER);
+        jButton1.setVerticalTextPosition(SwingConstants.BOTTOM);
+        jButton1.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                openButtonActionPerformed(evt);
+            }
+        });
+        jToolBar1.add(jButton1);
+
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        getContentPane().add(jToolBar1, gridBagConstraints);
 
         fileMenu.setText("File");
 
@@ -135,6 +161,8 @@ public class MainForm extends javax.swing.JFrame {
     private JMenuItem exitButton;
     private JMenu fileMenu;
     private JFileChooser files;
+    private JButton jButton1;
+    private JToolBar jToolBar1;
     private MainBody mainBody1;
     private JMenuBar mainMenu;
     private JPopupMenu.Separator menuSeperator;

@@ -190,7 +190,6 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 				}
 			} else if (evt.getClickCount() == 2) {
 				if (!openFiles.containsKey(total)) {
-					LOG.info(knownFiles.toString());
 					LOG.info(total);
 					assert knownFiles.containsKey(total);
 					URL url = knownFiles.get(total);

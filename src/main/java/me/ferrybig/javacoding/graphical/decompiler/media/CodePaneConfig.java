@@ -6,7 +6,6 @@
 package me.ferrybig.javacoding.graphical.decompiler.media;
 
 import java.net.URL;
-import java.util.Map;
 import java.util.logging.Logger;
 import me.ferrybig.javacoding.graphical.decompiler.Config;
 
@@ -51,13 +50,11 @@ public class CodePaneConfig {
 		if (this.getUrl() == null) {
 			return new LoadingPane(this);
 		}
-		for (Map.Entry<String, String> next : config.getFileTypes().entrySet()) {
-			if (this.getPath().endsWith(next.getKey())) {
-				LOG.info("Created pane for " + next.getValue() + " content");
-				return config.getMediaTypes().get(next.getValue()).apply(this);
-			}
+		FileType findFileType = FileType.findFileType(path);
+		if (findFileType == null) {
+			throw new IllegalArgumentException("Not defined!");
 		}
-		throw new IllegalArgumentException("Not defined!");
+		return findFileType.getOpenPane().apply(this);
 	}
 	private static final Logger LOG = Logger.getLogger(CodePaneConfig.class.getName());
 
