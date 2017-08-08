@@ -30,6 +30,7 @@ public enum FileType {
 	JSON(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS), "json"),
 	SHELL(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL), "sh", "bash", "bsh", "shell"),
 	JSP(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JSP), "jsp"),
+	IMAGE(ImagePane::new, "png", "jpg", "jpeg", "gif"),
 
 	;
 
