@@ -147,6 +147,7 @@ public class MainForm extends javax.swing.JFrame {
 		/* Create and display the form */
 		java.awt.EventQueue.invokeLater(() -> {
 			MainForm mainForm = new MainForm();
+			mainForm.mainBody1.registerLoggingHandler();
 			mainForm.setVisible(true);
 			LOG.info("Started fully!");
 			for (String s : args) {

@@ -24,6 +24,9 @@ public class MainBody extends javax.swing.JPanel {
 
 	public MainBody() {
 		initComponents();
+	}
+
+	public void registerLoggingHandler() {
 		Logger.getGlobal().getParent().addHandler(debugPane.getHandler());
 	}
 
@@ -36,7 +39,7 @@ public class MainBody extends javax.swing.JPanel {
 	}
 
 	public void openFile(File file) {
-		CodeOverview codeOverview = new CodeOverview(file.getAbsolutePath(), config);
+		CodeOverview codeOverview = new CodeOverview(file.getName(), config);
 		Decompiler decompiler = new Decompiler(file, codeOverview, config);
 		addTab(file.getAbsolutePath(), file.getName(), codeOverview, decompiler::stop);
 		decompiler.start();
@@ -49,7 +52,8 @@ public class MainBody extends javax.swing.JPanel {
 		TitleBar titleBar = new TitleBar(friendly);
 		mainPane.setTabComponentAt(index, titleBar);
 		titleBar.addActionListener((ActionEvent e) -> {
-			mainPane.removeTabAt(mainPane.indexOfTab(title));
+			//mainPane.removeTabAt(mainPane.indexOfTab(title));
+			mainPane.remove(com);
 			cancelable.run();
 		});
 		// Race condition in the creation of the contents of the JTree, 
