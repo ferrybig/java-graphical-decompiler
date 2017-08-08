@@ -11,14 +11,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 /**
  *
  * @author Fernando
  */
 public enum FileType {
-	TEXT(TextPane::new, "txt", "properties", "yml", "csv", "xml", "mf"),
-	JAVA(TEXT, JavaPane::new, "class", "java"),;
+	TEXT(SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_NONE), "txt", "csv", "mf"),
+	JAVA(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JAVA), "class", "java"),
+	XML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_XML), "xml"),
+	YAML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_YAML), "yml", "yaml"),
+	CSS(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_CSS), "css"),
+	LESS(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_LESS), "less"),
+	HTML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_HTML), "html"),
+	PROPERTIES(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_PROPERTIES_FILE), "properties"),
+	INI(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_INI), "ini"),
+	JSON(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS), "json"),
+	SHELL(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL), "sh", "bash", "bsh", "shell"),
+	JSP(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JSP), "jsp"),
+
+	;
 
 	private static final Map<String, FileType> byAlias;
 
@@ -26,7 +39,8 @@ public enum FileType {
 		Map<String, FileType> byAlias0 = new HashMap<>();
 		for (FileType val : values()) {
 			for (String alias : val.getAliases()) {
-				byAlias0.put(alias, val);
+				FileType old = byAlias0.put(alias, val);
+				assert old == null;
 			}
 		}
 		byAlias = Collections.unmodifiableMap(byAlias0);

@@ -8,21 +8,37 @@ package me.ferrybig.javacoding.graphical.decompiler.media;
 import me.ferrybig.javacoding.graphical.decompiler.StringLoader;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.net.URL;
+import java.util.function.Function;
+import java.util.logging.Logger;
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.Token;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 /**
  *
  * @author Fernando
  */
-public class JavaPane extends javax.swing.JPanel implements CodePane {
+public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 
-	public JavaPane(CodePaneConfig conf) {
+	private final String syntax;
+	private static final Logger LOG = Logger.getLogger(SyntaxPane.class.getName());
+
+	public SyntaxPane(CodePaneConfig conf, String syntax) {
+		this.syntax = syntax;
 		initComponents();
-		new StringLoader(conf.getUrl(), textPane::setText, e -> textPane.setText("// " + e)).execute();
+		textPane.setSyntaxEditingStyle(syntax);
+        scrollPane.setFoldIndicatorEnabled(true);
+        scrollPane.setLineNumbersEnabled(true);
+		new StringLoader(conf.getUrl(), t -> {
+			int caret = textPane.getCaretPosition();
+			textPane.setText(t);
+			textPane.setCaretPosition(caret);
+		}, e -> textPane.setText("// " + e)).execute();
 	}
 
 	@Override
@@ -38,6 +54,10 @@ public class JavaPane extends javax.swing.JPanel implements CodePane {
 	@Override
 	public Icon getIcon(boolean hasSources) {
 		return null;
+	}
+
+	public static Function<CodePaneConfig, CodePane> forSyntax(String syntax) {
+		return c -> new SyntaxPane(c, syntax);
 	}
 
 	/**
@@ -67,6 +87,11 @@ public class JavaPane extends javax.swing.JPanel implements CodePane {
         textPane.setPaintMatchedBracketPair(true);
         textPane.setPaintTabLines(true);
         textPane.setSyntaxEditingStyle("text/java");
+        textPane.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent evt) {
+                textPaneMouseClicked(evt);
+            }
+        });
         scrollPane.setViewportView(textPane);
 
         gridBagConstraints = new GridBagConstraints();
@@ -75,6 +100,23 @@ public class JavaPane extends javax.swing.JPanel implements CodePane {
         gridBagConstraints.weighty = 0.1;
         add(scrollPane, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void textPaneMouseClicked(MouseEvent evt) {//GEN-FIRST:event_textPaneMouseClicked
+        if(!evt.isControlDown())
+			return;
+		if(syntax.equals("text/java")) {
+			final int caretLineNumber = textPane.getCaretLineNumber();
+			final int caretLocation = textPane.getCaretPosition();
+			Token token = textPane.getTokenListForLine(caretLineNumber);
+			while(token != null && token.getEndOffset() < caretLocation) {
+				token = token.getNextToken();
+			}
+			if(token == null) {
+				return;
+			}
+			LOG.info("Found: " + token);
+		}
+    }//GEN-LAST:event_textPaneMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private RTextScrollPane scrollPane;

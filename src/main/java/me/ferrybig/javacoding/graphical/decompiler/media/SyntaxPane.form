@@ -41,6 +41,9 @@
             <Property name="paintTabLines" type="boolean" value="true"/>
             <Property name="syntaxEditingStyle" type="java.lang.String" value="text/java"/>
           </Properties>
+          <Events>
+            <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="textPaneMouseClicked"/>
+          </Events>
         </Component>
       </SubComponents>
     </Container>
