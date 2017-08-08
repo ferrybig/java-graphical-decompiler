@@ -138,7 +138,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
         setLayout(new GridBagLayout());
 
-        jSplitPane1.setLastDividerLocation(150);
+        jSplitPane1.setDividerLocation(300);
 
         files.setModel(this.treeModel);
         files.addMouseListener(new MouseAdapter() {
