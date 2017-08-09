@@ -22,6 +22,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
+import javax.swing.Timer;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -40,6 +41,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	private final DefaultTreeModel treeModel;
 	private final DefaultMutableTreeNode parent;
 	private final Config config;
+	private boolean expanded = false;
 
 	public CodeOverview(String base, Config config) {
 		this.base = base;
@@ -100,6 +102,10 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
 	@Override
 	public void fileDecompiled(String file, URL url) {
+		if(!expanded) {
+			new Timer(1000, e -> this.files.expandRow(0)).start();
+			expanded = true;
+		}
 		fileFound(file);
 		this.progress.setString("Decompiled: " + file);
 		knownFiles.put(file, url);
