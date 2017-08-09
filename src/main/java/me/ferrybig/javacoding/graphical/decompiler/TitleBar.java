@@ -8,9 +8,14 @@ package me.ferrybig.javacoding.graphical.decompiler;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.AbstractButton;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.SwingConstants;
 
 /**
  *
@@ -20,6 +25,28 @@ public class TitleBar extends javax.swing.JPanel {
 
 	public TitleBar() {
 		initComponents();
+	}
+
+	protected void fireActionPerformed(ActionEvent event) {
+		// Guaranteed to return a non-null array
+		Object[] listeners = listenerList.getListenerList();
+		ActionEvent e = null;
+		// Process the listeners last to first, notifying
+		// those that are interested in this event
+		for (int i = listeners.length - 2; i >= 0; i -= 2) {
+			if (listeners[i] == ActionListener.class) {
+				// Lazily create the event:
+				if (e == null) {
+					String actionCommand = event.getActionCommand();
+					e = new ActionEvent(this,
+							ActionEvent.ACTION_PERFORMED,
+							actionCommand,
+							event.getWhen(),
+							event.getModifiers());
+				}
+				((ActionListener) listeners[i + 1]).actionPerformed(e);
+			}
+		}
 	}
 
 	public TitleBar(String title) {
@@ -32,15 +59,15 @@ public class TitleBar extends javax.swing.JPanel {
 	}
 
 	public void addActionListener(ActionListener l) {
-		close.addActionListener(l);
+		listenerList.add(ActionListener.class, l);
 	}
 
 	public void removeActionListener(ActionListener l) {
-		close.removeActionListener(l);
+		listenerList.remove(ActionListener.class, l);
 	}
 
 	public ActionListener[] getActionListeners() {
-		return close.getActionListeners();
+		return listenerList.getListeners(ActionListener.class);
 	}
 
 	/**
@@ -57,11 +84,22 @@ public class TitleBar extends javax.swing.JPanel {
         title = new JLabel();
 
         setOpaque(false);
+        addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent evt) {
+                formMouseClicked(evt);
+            }
+        });
         setLayout(new GridBagLayout());
 
         close.setText("x");
         close.setBorderPainted(false);
-        close.setMargin(new Insets(2, 2, 2, 2));
+        close.setHorizontalTextPosition(SwingConstants.CENTER);
+        close.setMargin(new Insets(1, 1, 1, 1));
+        close.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                closeActionPerformed(evt);
+            }
+        });
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 0;
@@ -76,6 +114,16 @@ public class TitleBar extends javax.swing.JPanel {
         gridBagConstraints.weightx = 0.1;
         add(title, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void formMouseClicked(MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
+		if (evt.getButton() == 3) {
+			fireActionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, ""));
+		}
+    }//GEN-LAST:event_formMouseClicked
+
+    private void closeActionPerformed(ActionEvent evt) {//GEN-FIRST:event_closeActionPerformed
+		fireActionPerformed(evt);
+    }//GEN-LAST:event_closeActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JButton close;
