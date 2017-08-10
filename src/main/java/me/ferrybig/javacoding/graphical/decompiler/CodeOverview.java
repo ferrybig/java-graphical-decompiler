@@ -102,7 +102,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
 	@Override
 	public void fileDecompiled(String file, URL url) {
-		if(!expanded) {
+		if (!expanded) {
 			new Timer(1000, e -> this.files.expandRow(0)).start();
 			expanded = true;
 		}

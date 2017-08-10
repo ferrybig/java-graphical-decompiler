@@ -32,8 +32,8 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 		this.syntax = syntax;
 		initComponents();
 		textPane.setSyntaxEditingStyle(syntax);
-        scrollPane.setFoldIndicatorEnabled(true);
-        scrollPane.setLineNumbersEnabled(true);
+		scrollPane.setFoldIndicatorEnabled(true);
+		scrollPane.setLineNumbersEnabled(true);
 		new StringLoader(conf.getUrl(), t -> {
 			int caret = textPane.getCaretPosition();
 			textPane.setText(t);
@@ -102,16 +102,17 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
     }// </editor-fold>//GEN-END:initComponents
 
     private void textPaneMouseClicked(MouseEvent evt) {//GEN-FIRST:event_textPaneMouseClicked
-        if(!evt.isControlDown())
+		if (!evt.isControlDown()) {
 			return;
-		if(syntax.equals("text/java")) {
+		}
+		if (syntax.equals("text/java")) {
 			final int caretLineNumber = textPane.getCaretLineNumber();
 			final int caretLocation = textPane.getCaretPosition();
 			Token token = textPane.getTokenListForLine(caretLineNumber);
-			while(token != null && token.getEndOffset() < caretLocation) {
+			while (token != null && token.getEndOffset() < caretLocation) {
 				token = token.getNextToken();
 			}
-			if(token == null) {
+			if (token == null) {
 				return;
 			}
 			LOG.info("Found: " + token);

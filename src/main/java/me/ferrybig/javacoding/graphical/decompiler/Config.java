@@ -6,16 +6,40 @@
 package me.ferrybig.javacoding.graphical.decompiler;
 
 import java.io.File;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /**
  *
  * @author Fernando
  */
-public class Config {
+public final class Config {
 
-	private final File crf = new File("cfr_0_119.jar");
+	private volatile File cfr = new File("cfr_0_119.jar");
 
-	public File getCrf() {
-		return crf;
+	public Config() {
+		rescanCfr();
+	}
+
+	public File getCfr() {
+		return cfr;
+	}
+
+	public void rescanCfr() {
+		File[] toScan = new File[]{new File("."), new File("lib")};
+		File latestVersion = null;
+		Predicate<String> cfrJar = Pattern.compile("cfr_0_\\d{1,3}.jar").asPredicate();
+		for (File dir : toScan) {
+			final File[] listFiles = dir.listFiles((File pathname) -> cfrJar.test(pathname.getName()));
+			if (listFiles == null) {
+				continue;
+			}
+			for (File cfr : listFiles) {
+				if (latestVersion == null || latestVersion.compareTo(cfr) < 0) {
+					latestVersion = cfr;
+				}
+			}
+		}
+		cfr = latestVersion;
 	}
 }

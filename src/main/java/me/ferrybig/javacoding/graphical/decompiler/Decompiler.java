@@ -86,7 +86,7 @@ public class Decompiler {
 				List<String> cmd = new ArrayList<>();
 				cmd.add(System.getProperty("java.home") + "/bin/java");
 				cmd.add("-jar");
-				cmd.add(config.getCrf().getAbsolutePath());
+				cmd.add(config.getCfr().getAbsolutePath());
 				cmd.add("--outputdir");
 				cmd.add(tmp.toAbsolutePath().toString());
 				cmd.add(jarFile.getAbsolutePath());

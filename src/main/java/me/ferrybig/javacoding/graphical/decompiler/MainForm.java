@@ -12,17 +12,29 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.file.Files;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JToolBar;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 
@@ -149,12 +161,66 @@ public class MainForm extends javax.swing.JFrame {
 			MainForm mainForm = new MainForm();
 			mainForm.mainBody1.registerLoggingHandler();
 			mainForm.setVisible(true);
+			mainForm.checkCFRExists(args);
 			LOG.info("Started fully!");
-			for (String s : args) {
-				mainForm.mainBody1.openFile(new File(s));
-			}
 		});
 	}
+
+	private void checkCFRExists(String[] openAfterLaunch) {
+		if (mainBody1.getConfig().getCfr() == null) {
+			int showConfirmDialog = JOptionPane.showConfirmDialog(this, "CFR missing, either download manually from http://www.benf.org/other/cfr/ or press ok to download it");
+			if (showConfirmDialog == JOptionPane.OK_OPTION) {
+				new CfrDownloader().execute();
+			}
+		}
+		for (String s : openAfterLaunch) {
+			mainBody1.openFile(new File(s));
+		}
+	}
+
+	private final class CfrDownloader extends SwingWorker<Void, Void> {
+
+		@Override
+		protected void done() {
+			super.done();
+			JOptionPane.showMessageDialog(MainForm.this, "CFR download complete");
+			MainForm.this.mainBody1.getConfig().rescanCfr();
+		}
+
+		@Override
+		protected Void doInBackground() throws Exception {
+			URL homePage = new URL("http://www.benf.org/other/cfr/");
+			URL cfrDownload = null;
+			String cfrName = null;
+			Pattern pageDownload = Pattern.compile("<a href=\"cfr_0_\\d*.jar\">(cfr_0_\\d*.jar)</a>");
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(homePage.openStream()))) {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					Matcher matcher = pageDownload.matcher(line);
+					if (matcher.find()) {
+						cfrDownload = new URL("http://www.benf.org/other/cfr/" + matcher.group(1));
+						cfrName = matcher.group(1);
+					}
+				}
+			}
+			if (cfrDownload == null) {
+				throw new IOException("CFR download pattern not found");
+			}
+			URLConnection openConnection = cfrDownload.openConnection();
+			long contentLength = openConnection.getContentLengthLong();
+			File target = new File("lib");
+			if (!target.exists()) {
+				target = new File(".");
+			}
+			target = new File(target, cfrName);
+			try (BufferedInputStream reader = new BufferedInputStream(openConnection.getInputStream())) {
+				Files.copy(reader, target.toPath());
+			}
+			return null;
+		}
+
+	}
+
 	private static final Logger LOG = Logger.getLogger(MainForm.class.getName());
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
