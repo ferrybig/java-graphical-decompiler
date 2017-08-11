@@ -18,7 +18,7 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
  * @author Fernando
  */
 public enum FileType {
-	TEXT(SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_NONE), "txt", "csv", "mf"),
+	TEXT(SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_NONE), "txt", "csv", "mf", "MF"),
 	JAVA(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JAVA), "class", "java"),
 	XML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_XML), "xml"),
 	YAML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_YAML), "yml", "yaml"),
