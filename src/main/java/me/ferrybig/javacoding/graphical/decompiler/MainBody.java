@@ -41,6 +41,7 @@ public class MainBody extends javax.swing.JPanel {
 	public void openFile(File file) {
 		CodeOverview codeOverview = new CodeOverview(file.getName(), config);
 		Decompiler decompiler = new Decompiler(file, codeOverview, config);
+		codeOverview.registerDecompiler(decompiler);
 		addTab(file.getAbsolutePath(), file.getName(), codeOverview, decompiler::stop);
 		decompiler.start();
 	}
