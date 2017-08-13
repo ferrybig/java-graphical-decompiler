@@ -5,17 +5,21 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler;
 
+import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -23,11 +27,15 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
 import javax.swing.Timer;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePane;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePaneConfig;
+import me.ferrybig.javacoding.graphical.decompiler.media.FileType;
 
 /**
  *
@@ -35,12 +43,16 @@ import me.ferrybig.javacoding.graphical.decompiler.media.CodePaneConfig;
  */
 public class CodeOverview extends javax.swing.JPanel implements DecompileListener {
 
+	private static final Logger LOG = Logger.getLogger(CodeOverview.class.getName());
 	private final String base;
 	private final Map<String, URL> knownFiles = new HashMap<>();
+	private final Map<String, DefaultMutableTreeNode> filesMapping = new HashMap<>();
 	private final Map<String, CodePane> openFiles = new HashMap<>();
+	private final Map<String, Integer> priorityCache = new HashMap<>();
 	private final DefaultTreeModel treeModel;
 	private final DefaultMutableTreeNode parent;
 	private final Config config;
+	private WeakReference<Decompiler> decompiler = new WeakReference<>(null);
 	private boolean expanded = false;
 
 	public CodeOverview(String base, Config config) {
@@ -49,6 +61,10 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		this.treeModel = new DefaultTreeModel(parent);
 		this.config = config;
 		initComponents();
+	}
+
+	public void registerDecompiler(Decompiler decompiler) {
+		this.decompiler = new WeakReference<>(decompiler);
 	}
 
 	@Override
@@ -97,6 +113,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 				}
 				node = child;
 			}
+			filesMapping.put(path, node);
 		}
 	}
 
@@ -108,6 +125,8 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		}
 		fileFound(file);
 		this.progress.setString("Decompiled: " + file);
+		if(knownFiles.get(file) != null)
+			LOG.warning("Dublicate decoding of file " + file);
 		knownFiles.put(file, url);
 		if (openFiles.containsKey(file)) {
 			CodePane old = openFiles.get(file);
@@ -118,6 +137,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 				tabs.setIconAt(index, now.getIcon(true));
 			}
 		}
+		((DefaultTreeModel) files.getModel()).nodeChanged(filesMapping.get(file));
 	}
 
 	@Override
@@ -147,6 +167,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
         jSplitPane1.setDividerLocation(300);
 
         files.setModel(this.treeModel);
+        files.setCellRenderer(new CustomTreeCellRenderer());
         files.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent evt) {
                 filesMousePressed(evt);
@@ -155,6 +176,12 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
         jScrollPane1.setViewportView(files);
 
         jSplitPane1.setLeftComponent(jScrollPane1);
+
+        tabs.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent evt) {
+                tabsStateChanged(evt);
+            }
+        });
         jSplitPane1.setRightComponent(tabs);
 
         gridBagConstraints = new GridBagConstraints();
@@ -217,6 +244,20 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		}
     }//GEN-LAST:event_filesMousePressed
 
+    private void tabsStateChanged(ChangeEvent evt) {//GEN-FIRST:event_tabsStateChanged
+		Decompiler get = this.decompiler.get();
+		if (get == null) {
+			return;
+		}
+		this.priorityCache.clear();
+		for (CodePane pane : openFiles.values()) {
+			for (Map.Entry<String, Integer> entry : pane.getPriority(pane.getContent() == tabs.getSelectedComponent()).entrySet()) {
+				this.priorityCache.merge(entry.getKey(), entry.getValue(), (a, b) -> a + b);
+			}
+		}
+		get.setPriority(priorityCache);
+    }//GEN-LAST:event_tabsStateChanged
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JTree files;
     private JScrollPane jScrollPane1;
@@ -261,5 +302,42 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 			return part;
 		}
 	}
-	private static final Logger LOG = Logger.getLogger(CodeOverview.class.getName());
+
+	@SuppressWarnings("serial")
+	private class CustomTreeCellRenderer extends DefaultTreeCellRenderer {
+
+		private final Map<URL, ImageIcon> imageCache = new HashMap<>();
+
+		@Override
+		public Component getTreeCellRendererComponent(JTree tree,
+				Object value, boolean selected, boolean expanded,
+				boolean leaf, int row, boolean hasFocus) {
+
+			Component ret = super.getTreeCellRendererComponent(tree, value,
+					selected, expanded, leaf, row, hasFocus);
+
+			JLabel label = (JLabel) ret;
+
+			final URL imageUrl;
+			final DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
+			final Object userObject = node.getUserObject();
+			if (userObject instanceof PathPart && !node.getAllowsChildren()) {
+				PathPart part = (PathPart) userObject;
+				boolean isLoaded = knownFiles.get(part.getTotal()) != null;
+				if (!isLoaded) {
+					imageUrl = FileType.LOADING_IMAGE;
+				} else {
+					FileType type = FileType.findFileType(part.getTotal());
+					if (type == null) {
+						imageUrl = FileType.UNKNOWN_IMAGE;
+					} else {
+						imageUrl = type.getImage();
+					}
+				}
+				label.setIcon(imageCache.computeIfAbsent(imageUrl, u -> new ImageIcon(u)));
+			}
+
+			return ret;
+		}
+	}
 }

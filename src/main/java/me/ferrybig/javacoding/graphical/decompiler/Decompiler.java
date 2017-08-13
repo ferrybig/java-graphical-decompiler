@@ -18,8 +18,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -27,6 +29,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
 import javax.swing.SwingWorker;
 import me.ferrybig.javacoding.graphical.decompiler.support.CFRTalker;
 
@@ -36,9 +40,11 @@ import me.ferrybig.javacoding.graphical.decompiler.support.CFRTalker;
  */
 public class Decompiler {
 
+	private static final Logger LOG = Logger.getLogger(Decompiler.class.getName());
+	private final Config config;
+
 	private final File jarFile;
 	private final DecompileListener listener;
-	private final Config config;
 	private final Worker worker = new Worker();
 
 	public Decompiler(File jarFile, DecompileListener listener, Config config) {
@@ -52,26 +58,76 @@ public class Decompiler {
 		});
 	}
 
+	public synchronized void setOptions(List<String> options) {
+		worker.setOptions(options);
+	}
+
+	public synchronized void setPriority(Map<String, Integer> prio) {
+		worker.setPriority(prio);
+	}
+
 	public void start() {
 		worker.execute();
 	}
 
+	public void stop() {
+		this.worker.cancel(true);
+	}
+
+	private class FilePair {
+
+		private final String name;
+		private final URL url;
+
+		public FilePair(String name, URL url) {
+			this.name = name;
+			this.url = url;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public URL getUrl() {
+			return url;
+		}
+
+		@Override
+		public String toString() {
+			return "FilePair{" + "name=" + name + ", url=" + url + '}';
+		}
+
+	}
+
 	private class Worker extends SwingWorker<Object, FilePair> {
 
+		@GuardedBy(value = "this")
+		private List<String> baseOptions = Collections.emptyList();
+		@GuardedBy(value = "this")
 		private boolean streamStarted = false;
+		@GuardedBy(value = "this")
+		@Nullable
 		private OutputStream out;
+		@GuardedBy(value = "this")
 		private List<String> extraOptions = new ArrayList<>();
+		@GuardedBy(value = "this")
+		private boolean exiting = false;
+		@GuardedBy(value = "this")
+		private boolean waitingForOptionsAck = false;
+		@GuardedBy(value = "this")
+		private boolean newOptions = false;
 
 		private synchronized void childStarted(OutputStream out, Path tmp, List<String> decompileInsteadOfCopy) throws IOException {
-			streamStarted = true;
+			this.streamStarted = true;
 			this.out = out;
-			List<String> baseOptions = Arrays.asList(
+			this.baseOptions = Arrays.asList(
 					"--outputdir",
 					tmp.toAbsolutePath().toString(),
 					jarFile.getAbsolutePath());
 			if (out == null) {
 				return;
 			}
+			this.waitingForOptionsAck = true;
 			out.write(("options "
 					+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining(" "))
 					+ "\nclasses "
@@ -79,6 +135,39 @@ public class Decompiler {
 					+ "\nstart\n").getBytes(StandardCharsets.UTF_8)
 			);
 			out.flush();
+		}
+
+		public synchronized void setPriority(Map<String, Integer> prio) {
+			if (exiting || out == null) {
+				return;
+			}
+			try {
+				out.write(("setPrio "
+						+ prio.entrySet().stream().map(e -> e.getValue() + ":" + e.getKey()).collect(Collectors.joining(" "))
+						+ "\n").getBytes(StandardCharsets.UTF_8)
+				);
+				out.flush();
+			} catch (IOException ex) {
+				Logger.getLogger(Decompiler.class.getName()).log(Level.SEVERE, null, ex);
+			}
+		}
+
+		public synchronized void setOptions(List<String> options) {
+			extraOptions = options;
+			if (!waitingForOptionsAck) {
+				try {
+					out.write(("options "
+							+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining(" "))
+							+ "\n").getBytes(StandardCharsets.UTF_8)
+					);
+					out.flush();
+					waitingForOptionsAck = true;
+				} catch (IOException ex) {
+					Logger.getLogger(Decompiler.class.getName()).log(Level.SEVERE, null, ex);
+				}
+			} else {
+				newOptions = true;
+			}
 		}
 
 		@Override
@@ -162,7 +251,7 @@ public class Decompiler {
 			builder.redirectErrorStream(true);
 			Process p = builder.start();
 			try {
-				if(advancedDecode) {
+				if (advancedDecode) {
 					childStarted(p.getOutputStream(), tmp, decompileInsteadOfCopy);
 				} else {
 					childStarted(null, tmp, decompileInsteadOfCopy);
@@ -181,8 +270,29 @@ public class Decompiler {
 					while ((line = r.readLine()) != null) {
 
 						LOG.log(Level.INFO, "Read: {0}", line);
-						if (line.equals("[CFRTalker] Taskpool: done")) {
+						if (line.equals("[CFRTalker] Taskpool: options-done")) {
+							if (waitingForOptionsAck) {
+								if (newOptions) {
+									out.write(("options "
+											+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining(" "))
+											+ "\n").getBytes(StandardCharsets.UTF_8)
+									);
+									out.flush();
+									newOptions = false;
+								} else {
+									waitingForOptionsAck = false;
+								}
+							}
+						} else if (line.equals("[CFRTalker] Taskpool: done")) {
+							synchronized (this) {
+								if (waitingForOptionsAck) {
+									continue;
+								}
+								exiting = true;
+							}
 							p.getOutputStream().write("exit\n".getBytes(StandardCharsets.UTF_8));
+							p.getOutputStream().flush();
+							LOG.info("Sending exit notification");
 						} else if (line.startsWith("Processing ")
 								&& !line.equals("Processing " + jarFile.getAbsolutePath() + " (use silent to silence)")) {
 							if (pub != null) {
@@ -202,6 +312,9 @@ public class Decompiler {
 					if (pub != null) {
 						this.publish(pub);
 					}
+				}
+				if (advancedDecode) {
+					p.getOutputStream().close();
 				}
 			} finally {
 				p.destroy();
@@ -239,34 +352,4 @@ public class Decompiler {
 		}
 
 	}
-
-	public void stop() {
-		this.worker.cancel(true);
-	}
-
-	private class FilePair {
-
-		private final String name;
-		private final URL url;
-
-		public FilePair(String name, URL url) {
-			this.name = name;
-			this.url = url;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public URL getUrl() {
-			return url;
-		}
-
-		@Override
-		public String toString() {
-			return "FilePair{" + "name=" + name + ", url=" + url + '}';
-		}
-
-	}
-	private static final Logger LOG = Logger.getLogger(Decompiler.class.getName());
 }

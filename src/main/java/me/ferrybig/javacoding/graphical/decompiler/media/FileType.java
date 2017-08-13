@@ -5,6 +5,7 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler.media;
 
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,19 +19,22 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
  * @author Fernando
  */
 public enum FileType {
-	TEXT(SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_NONE), "txt", "csv", "mf", "MF"),
-	JAVA(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JAVA), "class", "java"),
-	XML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_XML), "xml"),
-	YAML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_YAML), "yml", "yaml"),
-	CSS(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_CSS), "css"),
-	LESS(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_LESS), "less"),
-	HTML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_HTML), "html"),
-	PROPERTIES(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_PROPERTIES_FILE), "properties"),
-	INI(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_INI), "ini"),
-	JSON(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS), "json"),
-	SHELL(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL), "sh", "bash", "bsh", "shell"),
-	JSP(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JSP), "jsp"),
-	IMAGE(ImagePane::new, "png", "jpg", "jpeg", "gif"),;
+	TEXT(SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_NONE), getResource("text.png"), "txt", "csv", "mf", "MF"),
+	JAVA(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JAVA), getResource("java.png"), "class", "java"),
+	XML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_XML), null, "xml"),
+	YAML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_YAML), null, "yml", "yaml"),
+	CSS(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_CSS), null, "css"),
+	LESS(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_LESS), null, "less"),
+	HTML(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_HTML), null, "html"),
+	PROPERTIES(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_PROPERTIES_FILE), null, "properties"),
+	INI(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_INI), null, "ini"),
+	JSON(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JSON_WITH_COMMENTS), null, "json"),
+	SHELL(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_UNIX_SHELL), null, "sh", "bash", "bsh", "shell"),
+	JSP(TEXT, SyntaxPane.forSyntax(SyntaxConstants.SYNTAX_STYLE_JSP), null, "jsp"),
+	IMAGE(ImagePane::new, getResource("image.png"), "png", "jpg", "jpeg", "gif"),;
+
+	public static final URL LOADING_IMAGE = getResource("hourclass.png");
+	public static final URL UNKNOWN_IMAGE = getResource("unknown.png");
 
 	private static final Map<String, FileType> byAlias;
 
@@ -57,20 +61,36 @@ public enum FileType {
 		return null;
 	}
 
-	private final Function<CodePaneConfig, CodePane> openPane;
-
-	private final FileType parent;
-
-	private final List<String> aliases;
-
-	private FileType(Function<CodePaneConfig, CodePane> openPane, String... aliases) {
-		this(null, openPane, aliases);
+	private static URL getResource(String resource) {
+		return FileType.class.getResource(resource);
 	}
 
-	private FileType(FileType parent, Function<CodePaneConfig, CodePane> openPane, String... aliases) {
+	private final List<String> aliases;
+	private final URL image;
+	private final Function<CodePaneConfig, CodePane> openPane;
+	private final FileType parent;
+
+	private FileType(Function<CodePaneConfig, CodePane> openPane, URL image, String... aliases) {
+		this(null, openPane, image, aliases);
+	}
+
+	private FileType(FileType parent, Function<CodePaneConfig, CodePane> openPane, URL image, String... aliases) {
 		this.openPane = openPane;
 		this.parent = parent;
+		if (image == null) {
+			this.image = parent.image;
+		} else {
+			this.image = image;
+		}
 		this.aliases = Collections.unmodifiableList(Arrays.asList(aliases));
+	}
+
+	public List<String> getAliases() {
+		return aliases;
+	}
+
+	public URL getImage() {
+		return image;
 	}
 
 	public Function<CodePaneConfig, CodePane> getOpenPane() {
@@ -79,10 +99,6 @@ public enum FileType {
 
 	public FileType getParent() {
 		return parent;
-	}
-
-	public List<String> getAliases() {
-		return aliases;
 	}
 
 }
