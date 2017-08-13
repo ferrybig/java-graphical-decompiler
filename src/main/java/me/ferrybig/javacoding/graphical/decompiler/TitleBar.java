@@ -12,6 +12,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import javax.swing.AbstractButton;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -70,6 +73,13 @@ public class TitleBar extends javax.swing.JPanel {
 		return listenerList.getListeners(ActionListener.class);
 	}
 
+	// TODO: figure out why adding this listener disabled the normal click action, and see if we can add it back
+	private void onMouse(MouseEvent evt) {
+		if (evt.getButton() == 3) {
+			fireActionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, ""));
+		}
+	}
+
 	/**
 	 * This method is called from within the constructor to initialize the form.
 	 * WARNING: Do NOT modify this code. The content of this method is always
@@ -84,11 +94,6 @@ public class TitleBar extends javax.swing.JPanel {
         title = new JLabel();
 
         setOpaque(false);
-        addMouseListener(new MouseAdapter() {
-            public void mouseClicked(MouseEvent evt) {
-                formMouseClicked(evt);
-            }
-        });
         setLayout(new GridBagLayout());
 
         close.setText("x");
@@ -114,12 +119,6 @@ public class TitleBar extends javax.swing.JPanel {
         gridBagConstraints.weightx = 0.1;
         add(title, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
-
-    private void formMouseClicked(MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
-		if (evt.getButton() == 3) {
-			fireActionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, ""));
-		}
-    }//GEN-LAST:event_formMouseClicked
 
     private void closeActionPerformed(ActionEvent evt) {//GEN-FIRST:event_closeActionPerformed
 		fireActionPerformed(evt);
