@@ -10,6 +10,8 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.LinkedList;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -41,6 +43,9 @@ public class DebugPane extends javax.swing.JPanel {
 
 		@Override
 		public void publish(LogRecord record) {
+			if(!this.isLoggable(record)) {
+				return;
+			}
 			if (SwingUtilities.isEventDispatchThread()) {
 				model.addRecord(record);
 			} else {
@@ -106,6 +111,11 @@ public class DebugPane extends javax.swing.JPanel {
 
         verbosityList.setModel(new DefaultComboBoxModel<>(new String[] { "Off", "Severe", "Warning", "Info", "Fine", "Finer", "Finest", "All" }));
         verbosityList.setSelectedIndex(3);
+        verbosityList.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent evt) {
+                verbosityListItemStateChanged(evt);
+            }
+        });
         verbosityList.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 verbosityListActionPerformed(evt);
@@ -126,6 +136,10 @@ public class DebugPane extends javax.swing.JPanel {
     private void clearButtonActionPerformed(ActionEvent evt) {//GEN-FIRST:event_clearButtonActionPerformed
 		this.model.clear();
     }//GEN-LAST:event_clearButtonActionPerformed
+
+    private void verbosityListItemStateChanged(ItemEvent evt) {//GEN-FIRST:event_verbosityListItemStateChanged
+        handler.setLevel(Level.parse(verbosityList.getSelectedItem().toString().toUpperCase()));
+    }//GEN-LAST:event_verbosityListItemStateChanged
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JButton clearButton;

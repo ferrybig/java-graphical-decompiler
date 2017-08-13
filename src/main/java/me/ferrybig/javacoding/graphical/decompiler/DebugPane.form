@@ -73,6 +73,7 @@
         <Property name="selectedIndex" type="int" value="3"/>
       </Properties>
       <Events>
+        <EventHandler event="itemStateChanged" listener="java.awt.event.ItemListener" parameters="java.awt.event.ItemEvent" handler="verbosityListItemStateChanged"/>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="verbosityListActionPerformed"/>
       </Events>
       <AuxValues>
