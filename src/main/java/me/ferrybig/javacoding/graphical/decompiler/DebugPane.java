@@ -43,7 +43,7 @@ public class DebugPane extends javax.swing.JPanel {
 
 		@Override
 		public void publish(LogRecord record) {
-			if(!this.isLoggable(record)) {
+			if (!this.isLoggable(record)) {
 				return;
 			}
 			if (SwingUtilities.isEventDispatchThread()) {
@@ -138,7 +138,7 @@ public class DebugPane extends javax.swing.JPanel {
     }//GEN-LAST:event_clearButtonActionPerformed
 
     private void verbosityListItemStateChanged(ItemEvent evt) {//GEN-FIRST:event_verbosityListItemStateChanged
-        handler.setLevel(Level.parse(verbosityList.getSelectedItem().toString().toUpperCase()));
+		handler.setLevel(Level.parse(verbosityList.getSelectedItem().toString().toUpperCase()));
     }//GEN-LAST:event_verbosityListItemStateChanged
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

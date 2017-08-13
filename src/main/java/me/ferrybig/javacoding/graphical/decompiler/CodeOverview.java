@@ -125,8 +125,9 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		}
 		fileFound(file);
 		this.progress.setString("Decompiled: " + file);
-		if(knownFiles.get(file) != null)
+		if (knownFiles.get(file) != null) {
 			LOG.warning("Dublicate decoding of file " + file);
+		}
 		knownFiles.put(file, url);
 		if (openFiles.containsKey(file)) {
 			CodePane old = openFiles.get(file);
