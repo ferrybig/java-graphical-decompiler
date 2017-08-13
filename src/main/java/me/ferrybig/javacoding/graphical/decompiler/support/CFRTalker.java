@@ -30,6 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.concurrent.GuardedBy;
 
 /**
  *
@@ -37,11 +38,10 @@ import java.util.stream.Collectors;
  */
 public class CFRTalker {
 
-	private static final int CLASSES_PER_INVOCATION = 4;
+	private static final int CLASSES_PER_INVOCATION = 8;
 	private static final int MAX_TASKS = Runtime.getRuntime().availableProcessors();
 	private volatile ExecutorService pool;
 	private final AtomicReference<List<String>> decompiling;
-	private int runningTasks;
 	private boolean stopping = false;
 	private final Method cfrMain;
 	private volatile String[] baseArgs;
@@ -56,30 +56,29 @@ public class CFRTalker {
 	}
 
 	public synchronized void start() {
-		pool = Executors.newFixedThreadPool(MAX_TASKS, new ThreadFactory() {
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = new Thread(r);
-				t.setPriority(Thread.NORM_PRIORITY - 2);
-				t.setDaemon(true);
-				return t;
-			}
+		pool = Executors.newFixedThreadPool(MAX_TASKS, (Runnable r) -> {
+			Thread t = new Thread(r);
+			t.setPriority(Thread.NORM_PRIORITY - 2);
+			t.setDaemon(true);
+			return t;
 		});
 		stopping = false;
-		newTask();
+		for (int i = 0; i < MAX_TASKS; i++) {
+			newTask();
+		}
 	}
 
-	public synchronized boolean newTask() {
-		if (runningTasks == MAX_TASKS || stopping || decompiling.get().isEmpty()) {
+	@GuardedBy(value = "this")
+	private boolean newTask() {
+		if (stopping || decompiling.get().isEmpty()) {
 			return false;
 		}
-		runningTasks++;
 		List<String> toDecompile = new ArrayList<>(CLASSES_PER_INVOCATION);
 		decompiling.getAndUpdate(s -> {
 			ArrayList<String> copy = new ArrayList<>(s);
-			ListIterator<String> iterator = copy.listIterator(copy.size() - 1);
+			ListIterator<String> iterator = copy.listIterator(copy.size());
 			toDecompile.clear();
-			for (int i = 0; iterator.hasPrevious()&& i < CLASSES_PER_INVOCATION; i++) {
+			for (int i = 0; iterator.hasPrevious() && i < CLASSES_PER_INVOCATION; i++) {
 				toDecompile.add(iterator.previous());
 				iterator.remove();
 			}
@@ -87,12 +86,14 @@ public class CFRTalker {
 		});
 		pool.submit(() -> {
 			try {
-				if(!toDecompile.isEmpty()) {
+				if (!toDecompile.isEmpty()) {
 					executeCFR(toDecompile);
 				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(1);
 			} finally {
-				synchronized(CFRTalker.class) {
-					runningTasks--;
+				synchronized (CFRTalker.this) {
 					if (toDecompile.size() < CLASSES_PER_INVOCATION) {
 						sendFinishMessage();
 					} else {
@@ -104,14 +105,10 @@ public class CFRTalker {
 		return true;
 	}
 
-	public void executeCFR(List<String> classes) {
+	public void executeCFR(List<String> classes) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		String[] args = baseArgs.clone();
-		args[1] = classes.stream().map(Pattern::quote).collect(Collectors.joining("|"));
-		try {
-			cfrMain.invoke(null, (Object) args);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-			Logger.getLogger(CFRTalker.class.getName()).log(Level.SEVERE, null, ex);
-		}
+		args[1] = classes.stream().map(Pattern::quote).collect(Collectors.joining("|", "^(", ")$"));
+		cfrMain.invoke(null, (Object) args);
 	}
 
 	public void sendFinishMessage() {
@@ -160,11 +157,11 @@ public class CFRTalker {
 						}
 						break mainLoop;
 					case "classes":
-						System.out.println("[CFRTalker] Taskpool: classes");
+						System.out.println("[CFRTalker] Taskpool: classes: " + Arrays.toString(split));
 						classes = Arrays.stream(split, 1, split.length).collect(Collectors.toList());
 						break;
 					case "options":
-						System.out.println("[CFRTalker] Taskpool: options");
+						System.out.println("[CFRTalker] Taskpool: options: " + split.length);
 						if (started) {
 							main.stop();
 						}
@@ -179,7 +176,7 @@ public class CFRTalker {
 						System.out.println("[CFRTalker] Taskpool: options-done");
 						break;
 					case "setPrio":
-						System.out.println("[CFRTalker] Taskpool: setprio");
+						System.out.println("[CFRTalker] Taskpool: setprio: " + Arrays.toString(split));
 						Map<String, Integer> prio = new HashMap<>(split.length - 1);
 						for (int i = 1; i < split.length; i++) {
 							String[] argsplit = split[i].split(":", 2);
