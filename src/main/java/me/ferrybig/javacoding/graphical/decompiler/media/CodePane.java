@@ -6,6 +6,8 @@
 package me.ferrybig.javacoding.graphical.decompiler.media;
 
 import java.net.URL;
+import java.util.Collections;
+import java.util.Map;
 import javax.swing.Icon;
 import javax.swing.JComponent;
 
@@ -20,5 +22,9 @@ public interface CodePane {
 	public JComponent getContent();
 
 	public Icon getIcon(boolean hasSources);
+
+	public default Map<String, Integer> getPriority(boolean focus) {
+		return Collections.emptyMap();
+	}
 
 }

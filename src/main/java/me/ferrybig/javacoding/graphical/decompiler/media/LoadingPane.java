@@ -8,12 +8,13 @@ package me.ferrybig.javacoding.graphical.decompiler.media;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Map;
 import javax.swing.GroupLayout;
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JProgressBar;
-import me.ferrybig.javacoding.graphical.decompiler.Config;
 
 /**
  *
@@ -21,6 +22,8 @@ import me.ferrybig.javacoding.graphical.decompiler.Config;
  */
 public class LoadingPane extends javax.swing.JPanel implements CodePane {
 
+	private static final Integer CACHED_INTEGER_TWENTY = 20;
+	private static final Integer CACHED_INTEGER_TWO = 2;
 	private final CodePaneConfig conf;
 
 	public LoadingPane(CodePaneConfig conf) {
@@ -41,6 +44,14 @@ public class LoadingPane extends javax.swing.JPanel implements CodePane {
 	@Override
 	public Icon getIcon(boolean hasSources) {
 		return null;
+	}
+
+	@Override
+	public Map<String, Integer> getPriority(boolean focus) {
+		if (!conf.getPath().endsWith(".class")) {
+			return CodePane.super.getPriority(focus);
+		}
+		return Collections.singletonMap(conf.getPath().replace(".class", "").replace('/', '.'), focus ? CACHED_INTEGER_TWENTY : CACHED_INTEGER_TWO);
 	}
 
 	/**
