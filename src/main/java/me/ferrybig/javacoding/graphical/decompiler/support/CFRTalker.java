@@ -39,7 +39,7 @@ import javax.annotation.concurrent.GuardedBy;
 public class CFRTalker {
 
 	private static final int CLASSES_PER_INVOCATION = 8;
-	private static final int MAX_TASKS = Runtime.getRuntime().availableProcessors();
+	private static final int MAX_TASKS = 1;//Runtime.getRuntime().availableProcessors();
 	private volatile ExecutorService pool;
 	private final AtomicReference<List<String>> decompiling;
 	private boolean stopping = false;
@@ -133,7 +133,7 @@ public class CFRTalker {
 			mainLoop:
 			while (scan.hasNextLine()) {
 				String line = scan.nextLine();
-				String[] split = line.split(" ");
+				String[] split = line.split("\0");
 				switch (split[0]) {
 					case "start":
 						System.out.println("[CFRTalker] Taskpool: started");

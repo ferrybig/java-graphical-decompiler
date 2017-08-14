@@ -128,10 +128,10 @@ public class Decompiler {
 				return;
 			}
 			this.waitingForOptionsAck = true;
-			out.write(("options "
-					+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining(" "))
-					+ "\nclasses "
-					+ decompileInsteadOfCopy.stream().map(s -> s.replace(".class", "").replace('/', '.')).collect(Collectors.joining(" "))
+			out.write(("options\0"
+					+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining("\0"))
+					+ "\nclasses\0"
+					+ decompileInsteadOfCopy.stream().map(s -> s.replace(".class", "").replace('/', '.')).collect(Collectors.joining("\0"))
 					+ "\nstart\n").getBytes(StandardCharsets.UTF_8)
 			);
 			out.flush();
@@ -142,8 +142,8 @@ public class Decompiler {
 				return;
 			}
 			try {
-				out.write(("setPrio "
-						+ prio.entrySet().stream().map(e -> e.getValue() + ":" + e.getKey()).collect(Collectors.joining(" "))
+				out.write(("setPrio\0"
+						+ prio.entrySet().stream().map(e -> e.getValue() + ":" + e.getKey()).collect(Collectors.joining("\0"))
 						+ "\n").getBytes(StandardCharsets.UTF_8)
 				);
 				out.flush();
@@ -156,8 +156,8 @@ public class Decompiler {
 			extraOptions = options;
 			if (!waitingForOptionsAck) {
 				try {
-					out.write(("options "
-							+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining(" "))
+					out.write(("options\0"
+							+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining("\0"))
 							+ "\n").getBytes(StandardCharsets.UTF_8)
 					);
 					out.flush();
@@ -203,8 +203,7 @@ public class Decompiler {
 			if (decompileInsteadOfCopy.isEmpty()) {
 				return null;
 			}
-			Path tmp = Files.createTempDirectory(jarFile.getName());
-			tmp.toFile().deleteOnExit();
+			Path tmp = listener.getTemporaryPath();
 
 			List<String> runClassPath = new ArrayList<>();
 			boolean advancedDecode;
@@ -273,8 +272,8 @@ public class Decompiler {
 						if (line.equals("[CFRTalker] Taskpool: options-done")) {
 							if (waitingForOptionsAck) {
 								if (newOptions) {
-									out.write(("options "
-											+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining(" "))
+									out.write(("options\0"
+											+ Stream.concat(baseOptions.stream(), extraOptions.stream()).collect(Collectors.joining("\0"))
 											+ "\n").getBytes(StandardCharsets.UTF_8)
 									);
 									out.flush();

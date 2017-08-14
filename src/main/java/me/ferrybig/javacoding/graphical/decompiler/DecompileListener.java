@@ -5,7 +5,9 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler;
 
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 
 /**
  *
@@ -22,4 +24,6 @@ public interface DecompileListener {
 	public void exceptionCaugth(Throwable ex);
 
 	public void setProgress(int progress);
+
+	public Path getTemporaryPath() throws IOException;
 }

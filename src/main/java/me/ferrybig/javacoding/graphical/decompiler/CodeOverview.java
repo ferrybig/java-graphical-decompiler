@@ -11,8 +11,12 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,16 +55,39 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	private final Map<String, Integer> priorityCache = new HashMap<>();
 	private final DefaultTreeModel treeModel;
 	private final DefaultMutableTreeNode parent;
+	private final String fullName;
 	private final Config config;
+	private Path tmp;
 	private WeakReference<Decompiler> decompiler = new WeakReference<>(null);
 	private boolean expanded = false;
 
-	public CodeOverview(String base, Config config) {
+	public CodeOverview(String base, String fullName, Config config) {
 		this.base = base;
 		this.parent = new DefaultMutableTreeNode(base, true);
 		this.treeModel = new DefaultTreeModel(parent);
+		this.fullName = fullName;
 		this.config = config;
 		initComponents();
+	}
+
+	@Override
+	public Path getTemporaryPath() throws IOException {
+		Path tmp = this.tmp;
+		if(tmp != null)
+			return tmp;
+		synchronized(this) {
+			 tmp = this.tmp;
+			if(tmp != null)
+				return tmp;
+			this.tmp = Files.createTempDirectory(base);
+			this.tmp.toFile().deleteOnExit();
+			return this.tmp;
+		}
+	}
+
+	public OutputStream createTempFile(String path) throws IOException {
+		return Files.newOutputStream(getTemporaryPath().resolve(path));
+		
 	}
 
 	public void registerDecompiler(Decompiler decompiler) {
@@ -144,6 +171,20 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	@Override
 	public void setProgress(int progress) {
 		this.progress.setValue(progress);
+	}
+
+	private void resendPriorityLists() {
+		Decompiler get = this.decompiler.get();
+		if (get == null) {
+			return;
+		}
+		this.priorityCache.clear();
+		for (CodePane pane : openFiles.values()) {
+			for (Map.Entry<String, Integer> entry : pane.getPriority(pane.getContent() == tabs.getSelectedComponent()).entrySet()) {
+				this.priorityCache.merge(entry.getKey(), entry.getValue(), (a, b) -> a + b);
+			}
+		}
+		get.setPriority(priorityCache);
 	}
 
 	/**
@@ -239,24 +280,14 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 					});
 					openFiles.put(total, page);
 					tabs.setSelectedIndex(index);
+					resendPriorityLists();
 				}
-
 			}
 		}
     }//GEN-LAST:event_filesMousePressed
 
     private void tabsStateChanged(ChangeEvent evt) {//GEN-FIRST:event_tabsStateChanged
-		Decompiler get = this.decompiler.get();
-		if (get == null) {
-			return;
-		}
-		this.priorityCache.clear();
-		for (CodePane pane : openFiles.values()) {
-			for (Map.Entry<String, Integer> entry : pane.getPriority(pane.getContent() == tabs.getSelectedComponent()).entrySet()) {
-				this.priorityCache.merge(entry.getKey(), entry.getValue(), (a, b) -> a + b);
-			}
-		}
-		get.setPriority(priorityCache);
+		resendPriorityLists();
     }//GEN-LAST:event_tabsStateChanged
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
