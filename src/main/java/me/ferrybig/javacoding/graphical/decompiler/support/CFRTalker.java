@@ -73,6 +73,7 @@ public class CFRTalker {
 	private boolean newTask() {
 		return newTask(threadIdGenerator++);
 	}
+
 	private boolean newTask(int threadId) {
 		if (stopping || decompiling.isEmpty()) {
 			return false;
@@ -86,9 +87,9 @@ public class CFRTalker {
 		pool.submit(() -> {
 			try {
 				if (!toDecompile.isEmpty()) {
-					System.out.println("[CFRTalker] Taskpool: task-start: " + threadId + toDecompile.stream().collect(Collectors.joining(" ", " ", "")));
+					System.out.print("[CFRTalker] Taskpool: task-start: " + threadId + toDecompile.stream().collect(Collectors.joining(" ", " ", "\n")));
 					executeCFR(toDecompile);
-					System.out.println("[CFRTalker] Taskpool: task-done: " + threadId);
+					System.out.print("[CFRTalker] Taskpool: task-done: " + threadId + "\n");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();

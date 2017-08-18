@@ -5,6 +5,7 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler;
 
+import me.ferrybig.javacoding.graphical.decompiler.decompiler.AdvancedDecompiler;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -40,7 +41,7 @@ public class MainBody extends javax.swing.JPanel {
 
 	public void openFile(File file) {
 		CodeOverview codeOverview = new CodeOverview(file.getName(), file.getAbsolutePath(), config);
-		Decompiler decompiler = new Decompiler(file, codeOverview, config);
+		AdvancedDecompiler decompiler = new AdvancedDecompiler(file, codeOverview, config);
 		codeOverview.registerDecompiler(decompiler);
 		addTab(file.getAbsolutePath(), file.getName(), codeOverview, decompiler::stop);
 		decompiler.start();

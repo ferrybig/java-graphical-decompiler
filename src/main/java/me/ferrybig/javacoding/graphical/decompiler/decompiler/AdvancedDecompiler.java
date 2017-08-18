@@ -1,0 +1,236 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package me.ferrybig.javacoding.graphical.decompiler.decompiler;
+
+import java.io.BufferedReader;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.JarURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+import javax.swing.SwingWorker;
+import me.ferrybig.javacoding.graphical.decompiler.Config;
+import me.ferrybig.javacoding.graphical.decompiler.support.CFRTalker;
+
+/**
+ *
+ * @author Fernando
+ */
+public class AdvancedDecompiler implements Decompiler {
+
+	private static final Logger LOG = Logger.getLogger(AdvancedDecompiler.class.getName());
+	private final Config config;
+
+	private final File jarFile;
+	private final DecompileListener listener;
+	private boolean started;
+	private final Worker worker = new Worker();
+
+	public AdvancedDecompiler(File jarFile, DecompileListener listener, Config config) {
+		this.jarFile = jarFile;
+		this.listener = listener;
+		this.config = config;
+		this.worker.addPropertyChangeListener(e -> {
+			if (e.getPropertyName().equals("progress")) {
+				listener.setProgress((int) e.getNewValue());
+			}
+		});
+	}
+
+	@Override
+	public synchronized void setOptions(List<String> options) {
+		//worker.setOptions(options);
+	}
+
+	@Override
+	public synchronized void setPriority(Map<String, Integer> prio) {
+		worker.priority.forEach(c -> c.accept(prio));
+	}
+
+	@Override
+	public boolean isDone() {
+		return worker.isDone();
+	}
+
+	@Override
+	public boolean isSmart() {
+		return !(worker.activeDecompiler instanceof DumbDecompiler);
+	}
+
+	@Override
+	public boolean isStarted() {
+		return started;
+	}
+
+	@Override
+	public void start() {
+		started = true;
+		worker.execute();
+	}
+
+	@Override
+	public void stop() {
+		this.worker.cancel(true);
+	}
+
+	private class FilePair {
+
+		private final String name;
+		private final URL url;
+
+		public FilePair(String name, URL url) {
+			this.name = name;
+			this.url = url;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public URL getUrl() {
+			return url;
+		}
+
+		@Override
+		public String toString() {
+			return "FilePair{" + "name=" + name + ", url=" + url + '}';
+		}
+
+	}
+
+	private class Worker extends SwingWorker<Object, FilePair> implements DecompileTask.DecompileData {
+
+		private volatile DecompileTask activeDecompiler = null;
+		private boolean noticedCancelation = false;
+		private final List<Runnable> cancelation = new CopyOnWriteArrayList<>();
+		private final List<Consumer<Map<String, Integer>>> priority = new CopyOnWriteArrayList<>();
+		private final List<String> remaining = new ArrayList<>();
+		private final Map<String, Integer> prio = new HashMap<>();
+
+		@Override
+		public boolean checkCancelation() {
+			if (noticedCancelation) {
+				return true;
+			}
+			if (this.isCancelled()) {
+				noticedCancelation = true;
+				cancelation.forEach(Runnable::run);
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		public void fileDecompiled(String file, URL url) {
+			this.publish(new FilePair(file, url));
+		}
+
+		@Override
+		public void fileFound(String file) {
+			remaining.add(file);
+			this.publish(new FilePair(file, null));
+		}
+
+		@Override
+		public void fileListDecompile(List<String> file) {
+		}
+
+		@Override
+		public Config getConfig() {
+			return config;
+		}
+
+		@Override
+		public Closeable registerCancelListener(Runnable task) {
+			this.cancelation.add(task);
+			return () -> this.cancelation.remove(task);
+		}
+
+		@Override
+		public Closeable registerPriorityListener(Consumer<Map<String, Integer>> priority) {
+			synchronized (this) {
+				priority.accept(prio);
+				this.priority.add(priority);
+			}
+			return () -> {
+				synchronized (this) {
+					this.priority.remove(priority);
+				}
+			};
+		}
+
+		@Override
+		protected Object doInBackground() throws Exception {
+			activeDecompiler = new FileDecompiler(jarFile);
+			activeDecompiler.decompile(this);
+			int size = remaining.size();
+			if (size == 0) {
+				return null;
+			}
+			Path tmp = listener.getTemporaryPath();
+			if (size > 32) {
+				activeDecompiler = new SmartDecompiler(Collections.emptyList(), tmp, jarFile.toPath(), remaining);
+				if (activeDecompiler.decompile(this)) {
+					return null;
+				}
+			}
+			activeDecompiler = new DumbDecompiler(Collections.emptyList(), tmp, jarFile.toPath());
+			activeDecompiler.decompile(this);
+			return null;
+		}
+
+		@Override
+		protected void done() {
+			super.done();
+			try {
+				this.get();
+			} catch (ExecutionException | InterruptedException e) {
+				LOG.log(Level.WARNING, "Exception during decompilation:", e);
+				listener.exceptionCaugth(e);
+			}
+			listener.decompileDone();
+		}
+
+		@Override
+		protected void process(List<FilePair> chunks) {
+			super.process(chunks);
+			for (FilePair p : chunks) {
+				if (p.getUrl() == null) {
+					listener.fileFound(p.getName());
+					LOG.log(Level.FINE, "Render decompiling: {0}", p);
+				} else {
+					listener.fileDecompiled(p.getName(), p.getUrl());
+					LOG.log(Level.FINE, "Render normal: {0}", p);
+				}
+			}
+		}
+
+	}
+}

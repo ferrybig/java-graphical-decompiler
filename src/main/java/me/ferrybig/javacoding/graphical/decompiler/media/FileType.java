@@ -101,4 +101,12 @@ public enum FileType {
 		return parent;
 	}
 
+	public String toString() {
+		if (this.parent != null) {
+			return this.parent.toString() + '/' + this.name().toLowerCase();
+		} else {
+			return this.name().toLowerCase();
+		}
+	}
+
 }

@@ -5,6 +5,8 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler;
 
+import me.ferrybig.javacoding.graphical.decompiler.decompiler.AdvancedDecompiler;
+import me.ferrybig.javacoding.graphical.decompiler.decompiler.DecompileListener;
 import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -58,7 +60,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	private final String fullName;
 	private final Config config;
 	private Path tmp;
-	private WeakReference<Decompiler> decompiler = new WeakReference<>(null);
+	private WeakReference<AdvancedDecompiler> decompiler = new WeakReference<>(null);
 	private boolean expanded = false;
 
 	public CodeOverview(String base, String fullName, Config config) {
@@ -73,12 +75,14 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	@Override
 	public Path getTemporaryPath() throws IOException {
 		Path tmp = this.tmp;
-		if(tmp != null)
+		if (tmp != null) {
 			return tmp;
-		synchronized(this) {
-			 tmp = this.tmp;
-			if(tmp != null)
+		}
+		synchronized (this) {
+			tmp = this.tmp;
+			if (tmp != null) {
 				return tmp;
+			}
 			this.tmp = Files.createTempDirectory(base);
 			this.tmp.toFile().deleteOnExit();
 			return this.tmp;
@@ -87,10 +91,9 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
 	public OutputStream createTempFile(String path) throws IOException {
 		return Files.newOutputStream(getTemporaryPath().resolve(path));
-		
 	}
 
-	public void registerDecompiler(Decompiler decompiler) {
+	public void registerDecompiler(AdvancedDecompiler decompiler) {
 		this.decompiler = new WeakReference<>(decompiler);
 	}
 
@@ -174,7 +177,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	}
 
 	private void resendPriorityLists() {
-		Decompiler get = this.decompiler.get();
+		AdvancedDecompiler get = this.decompiler.get();
 		if (get == null) {
 			return;
 		}
