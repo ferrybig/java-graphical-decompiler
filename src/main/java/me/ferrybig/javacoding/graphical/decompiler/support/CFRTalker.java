@@ -39,15 +39,16 @@ import javax.annotation.concurrent.GuardedBy;
 public class CFRTalker {
 
 	private static final int CLASSES_PER_INVOCATION = 8;
-	private static final int MAX_TASKS = 1;//Runtime.getRuntime().availableProcessors();
+	private static final int MAX_TASKS = Runtime.getRuntime().availableProcessors();
 	private volatile ExecutorService pool;
-	private final AtomicReference<List<String>> decompiling;
+	private final List<String> decompiling;
 	private boolean stopping = false;
 	private final Method cfrMain;
-	private volatile String[] baseArgs;
+	private String[] baseArgs;
+	private int threadIdGenerator = 0;
 
 	public CFRTalker() {
-		decompiling = new AtomicReference<>(Collections.emptyList());
+		decompiling = new ArrayList<>();
 		try {
 			cfrMain = Class.forName("org.benf.cfr.reader.Main").getMethod("main", String[].class);
 		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException ex) {
@@ -70,24 +71,24 @@ public class CFRTalker {
 
 	@GuardedBy(value = "this")
 	private boolean newTask() {
-		if (stopping || decompiling.get().isEmpty()) {
+		return newTask(threadIdGenerator++);
+	}
+	private boolean newTask(int threadId) {
+		if (stopping || decompiling.isEmpty()) {
 			return false;
 		}
 		List<String> toDecompile = new ArrayList<>(CLASSES_PER_INVOCATION);
-		decompiling.getAndUpdate(s -> {
-			ArrayList<String> copy = new ArrayList<>(s);
-			ListIterator<String> iterator = copy.listIterator(copy.size());
-			toDecompile.clear();
-			for (int i = 0; iterator.hasPrevious() && i < CLASSES_PER_INVOCATION; i++) {
-				toDecompile.add(iterator.previous());
-				iterator.remove();
-			}
-			return copy;
-		});
+		ListIterator<String> iterator = decompiling.listIterator(decompiling.size());
+		for (int i = 0; iterator.hasPrevious() && i < CLASSES_PER_INVOCATION; i++) {
+			toDecompile.add(iterator.previous());
+			iterator.remove();
+		}
 		pool.submit(() -> {
 			try {
 				if (!toDecompile.isEmpty()) {
+					System.out.println("[CFRTalker] Taskpool: task-start: " + threadId + toDecompile.stream().collect(Collectors.joining(" ", " ", "")));
 					executeCFR(toDecompile);
+					System.out.println("[CFRTalker] Taskpool: task-done: " + threadId);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -97,7 +98,7 @@ public class CFRTalker {
 					if (toDecompile.size() < CLASSES_PER_INVOCATION) {
 						sendFinishMessage();
 					} else {
-						newTask();
+						newTask(threadId);
 					}
 				}
 			}
@@ -139,7 +140,8 @@ public class CFRTalker {
 						System.out.println("[CFRTalker] Taskpool: started");
 						if (!started) {
 							started = true;
-							main.decompiling.set(classes);
+							main.decompiling.clear();
+							main.decompiling.addAll(classes);
 							main.start();
 						}
 						break;
@@ -169,7 +171,8 @@ public class CFRTalker {
 						newArgs[0] = "--jarfilter";
 						System.arraycopy(split, 1, newArgs, 2, split.length - 1);
 						main.baseArgs = newArgs;
-						main.decompiling.set(new ArrayList<>(classes));
+						main.decompiling.clear();
+						main.decompiling.addAll(classes);
 						if (started) {
 							main.start();
 						}
@@ -183,11 +186,7 @@ public class CFRTalker {
 							prio.put(argsplit[1], Integer.parseInt(argsplit[0]));
 						}
 						Integer d = 0;
-						main.decompiling.getAndUpdate(s -> {
-							String[] list = s.toArray(new String[0]);
-							Arrays.sort(list, Comparator.comparing(c -> prio.getOrDefault(c, d)));
-							return Arrays.asList(list);
-						});
+						main.decompiling.sort(Comparator.comparing(c -> prio.getOrDefault(c, d)));
 						break;
 					default:
 						System.err.println("Unknown cmd: " + line);
