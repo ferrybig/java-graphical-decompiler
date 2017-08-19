@@ -79,6 +79,7 @@
     </Component>
     <Component class="javax.swing.JTextField" name="fileName">
       <Properties>
+        <Property name="editable" type="boolean" value="false"/>
         <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
           <Connection code="conf.getPath()" type="code"/>
         </Property>
@@ -107,6 +108,7 @@
     </Component>
     <Component class="javax.swing.JTextField" name="fileType">
       <Properties>
+        <Property name="editable" type="boolean" value="false"/>
         <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
           <Connection code="getExtension()" type="code"/>
         </Property>
@@ -119,6 +121,7 @@
     </Component>
     <Component class="javax.swing.JTextField" name="fileSize">
       <Properties>
+        <Property name="editable" type="boolean" value="false"/>
         <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
           <Connection code="getFileSize()" type="code"/>
         </Property>

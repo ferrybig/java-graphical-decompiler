@@ -112,11 +112,20 @@ public class SmartDecompiler implements DecompileTask {
 		try (Closeable ignored = data.registerCancelListener(p::destroy); Closeable ignored2 = data.registerPriorityListener(this::setPriority)) {
 			childStarted(p.getOutputStream());
 			try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+				final String ignoredProcessing = "Processing " + toAbsolutePath + " (use silent to silence)";
+				final int ignoredProcessingLength = ignoredProcessing.length();
 				Map<String, PerThreadStatus> statuses = new HashMap<>();
 				PerThreadStatus[] taskById = new PerThreadStatus[8];
 				String line;
+				mainLoop:
 				while ((line = r.readLine()) != null) {
 					LOG.log(Level.FINE, "Read: {0}", line);
+					while (line.startsWith(ignoredProcessing)) {
+						if (line.length() == ignoredProcessingLength) {
+							continue mainLoop;
+						}
+						line = line.substring(ignoredProcessingLength);
+					}
 					if (line.equals("[CFRTalker] Taskpool: options-done")) {
 						if (waitingForOptionsAck) {
 							if (newOptions) {
@@ -161,10 +170,12 @@ public class SmartDecompiler implements DecompileTask {
 						if (part != null) {
 							markFileAsDone(data, part);
 						}
-					} else if (line.startsWith("Processing ")
-							&& !line.equals("Processing " + toAbsolutePath + " (use silent to silence)")) {
+					} else if (line.startsWith("Processing ")) {
 						String decompiled = line.substring("Processing ".length());
 						PerThreadStatus task = statuses.remove(decompiled);
+						if (task == null) {
+							throw new IllegalStateException("CFR bridge returned " + line + " without announcing it");
+						}
 						if (task.getLastLine() != null) {
 							markFileAsDone(data, task.getLastLine());
 						}

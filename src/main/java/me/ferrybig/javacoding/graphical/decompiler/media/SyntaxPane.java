@@ -82,11 +82,9 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
         textPane.setColumns(20);
         textPane.setRows(5);
         textPane.setTabSize(4);
-        textPane.setText("package we.are.still.loading;\n\n// Loading file...\n\npublic class Loading {\n\n\tpublic static void main(String ... args) {\n\t\tSystem.out.println(\"We are still loading...\");\n\t}\n\n}"); // NOI18N
         textPane.setMarginLineEnabled(true);
         textPane.setPaintMatchedBracketPair(true);
         textPane.setPaintTabLines(true);
-        textPane.setSyntaxEditingStyle("text/java");
         textPane.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent evt) {
                 textPaneMouseClicked(evt);

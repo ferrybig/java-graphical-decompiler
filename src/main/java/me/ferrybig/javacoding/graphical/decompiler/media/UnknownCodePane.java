@@ -12,20 +12,22 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
@@ -36,7 +38,7 @@ import me.ferrybig.javacoding.graphical.decompiler.CodeOverview;
  *
  * @author Fernando
  */
-public class UnknownCodePane extends javax.swing.JPanel {
+public class UnknownCodePane extends javax.swing.JPanel implements CodePane {
 
 	private static final Logger LOG = Logger.getLogger(UnknownCodePane.class.getName());
 
@@ -48,6 +50,21 @@ public class UnknownCodePane extends javax.swing.JPanel {
 		this.conf = conf;
 		this.overview = overview;
 		initComponents();
+	}
+
+	@Override
+	public CodePane contentUpdated(URL newUrl) {
+		return new UnknownCodePane(conf.setUrl(newUrl), overview);
+	}
+
+	@Override
+	public JComponent getContent() {
+		return this;
+	}
+
+	@Override
+	public Icon getIcon(boolean hasSources) {
+		return null;
 	}
 
 	private String getExtension() {
@@ -143,6 +160,7 @@ public class UnknownCodePane extends javax.swing.JPanel {
         gridBagConstraints.insets = new Insets(3, 3, 3, 3);
         add(fileSizeLabel, gridBagConstraints);
 
+        fileName.setEditable(false);
         fileName.setText(conf.getPath());
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -165,6 +183,7 @@ public class UnknownCodePane extends javax.swing.JPanel {
         gridBagConstraints.insets = new Insets(3, 3, 3, 3);
         add(decompileProgress, gridBagConstraints);
 
+        fileType.setEditable(false);
         fileType.setText(getExtension());
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 2;
@@ -173,6 +192,7 @@ public class UnknownCodePane extends javax.swing.JPanel {
         gridBagConstraints.insets = new Insets(3, 3, 3, 3);
         add(fileType, gridBagConstraints);
 
+        fileSize.setEditable(false);
         fileSize.setText(getFileSize());
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 2;
@@ -186,34 +206,44 @@ public class UnknownCodePane extends javax.swing.JPanel {
 		if (conf.getUrl().getProtocol().equals("jar")) {
 			decompileProgress.setIndeterminate(true);
 			decompileProgress.setString("Status: decompressing");
-			SwingWorker<Void, URL> worker = new SwingWorker<Void, URL>() {
+			SwingWorker<URL, Void> worker = new SwingWorker<URL, Void>() {
 
 				@Override
 				protected void done() {
 					try {
-						this.get();
-					} catch (InterruptedException | ExecutionException ex) {
+						URL url = this.get();
+						overview.fileUrlUpdated(conf, url);
+						Desktop.getDesktop().browse(url.toURI());
+					} catch (InterruptedException | ExecutionException | URISyntaxException | IOException ex) {
 						LOG.log(Level.SEVERE, null, ex);
 					}
 				}
 
 				@Override
-				protected Void doInBackground() throws Exception {
+				protected URL doInBackground() throws Exception {
 					URLConnection con = conf.getUrl().openConnection();
 					long size = con.getContentLengthLong();
-					try (InputStream in = conf.getUrl().openStream(); OutputStream out = new BufferedOutputStream(overview.createTempFile(conf.getPath()))) {
+					long written = 0;
+					final Path target = overview.createTempFile(conf.getPath());
+					try (InputStream in = conf.getUrl().openStream();
+							OutputStream out = new BufferedOutputStream(Files.newOutputStream(target))) {
 						byte[] buf = new byte[1024 * 32];
 						int len;
 						while ((len = in.read(buf)) != -1) {
 							out.write(buf, 0, len);
+							written += len;
+							this.setProgress((int) (written * 100 / size));
 						}
 					}
-					return null;
+					return target.toUri().toURL();
 				}
 
 			};
 			worker.addPropertyChangeListener(e -> {
-
+				if (e.getPropertyName().equals("progress")) {
+					decompileProgress.setIndeterminate(false);
+					decompileProgress.setValue((int) e.getNewValue());
+				}
 			});
 			worker.execute();
 		} else {
@@ -226,7 +256,7 @@ public class UnknownCodePane extends javax.swing.JPanel {
     }//GEN-LAST:event_openInSystemActionActionPerformed
 
     private void FileTypeListActionPerformed(ActionEvent evt) {//GEN-FIRST:event_FileTypeListActionPerformed
-		// TODO add your handling code here:
+		overview.openAs(conf, (FileType) openInlineAction.getSelectedItem());
     }//GEN-LAST:event_FileTypeListActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

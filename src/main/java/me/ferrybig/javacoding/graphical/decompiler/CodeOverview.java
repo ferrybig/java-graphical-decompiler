@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -46,6 +47,7 @@ import javax.swing.tree.TreePath;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePane;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePaneConfig;
 import me.ferrybig.javacoding.graphical.decompiler.media.FileType;
+import me.ferrybig.javacoding.graphical.decompiler.media.UnknownCodePane;
 
 /**
  *
@@ -58,6 +60,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	private final Map<String, URL> knownFiles = new HashMap<>();
 	private final Map<String, DefaultMutableTreeNode> filesMapping = new HashMap<>();
 	private final Map<String, CodePane> openFiles = new HashMap<>();
+	private final Consumer<Path> pathRegistration;
 	private final Map<String, Integer> priorityCache = new HashMap<>();
 	private final DefaultTreeModel treeModel;
 	private final DefaultMutableTreeNode parent;
@@ -68,13 +71,29 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	private boolean expanded = false;
 	private long startTime = 0;
 
-	public CodeOverview(String base, String fullName, Config config) {
+	public CodeOverview(String base, String fullName, Config config, Consumer<Path> pathRegistration) {
+		assert SwingUtilities.isEventDispatchThread();
 		this.base = base;
 		this.parent = new DefaultMutableTreeNode(base, true);
 		this.treeModel = new DefaultTreeModel(parent);
 		this.fullName = fullName;
 		this.config = config;
+		this.pathRegistration = pathRegistration;
 		initComponents();
+	}
+
+	public void fileUrlUpdated(CodePaneConfig conf, URL url) {
+		assert SwingUtilities.isEventDispatchThread();
+		knownFiles.put(conf.getPath(), url);
+		if (openFiles.containsKey(conf.getPath())) {
+			CodePane old = openFiles.get(conf.getPath());
+			CodePane now = old.contentUpdated(url);
+			if (old != now && now != null) {
+				int index = tabs.indexOfTab(conf.getPath());
+				tabs.setComponentAt(index, now.getContent());
+				tabs.setIconAt(index, now.getIcon(true));
+			}
+		}
 	}
 
 	@Override
@@ -89,21 +108,31 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 				return tmp;
 			}
 			this.tmp = Files.createTempDirectory(base);
-			this.tmp.toFile().deleteOnExit();
+			pathRegistration.accept(this.tmp);
 			return this.tmp;
 		}
 	}
 
-	public OutputStream createTempFile(String path) throws IOException {
-		return Files.newOutputStream(getTemporaryPath().resolve(path));
+	public Path createTempFile(String path) throws IOException {
+		final Path target = getTemporaryPath().resolve(path);
+		Files.createDirectories(target.getParent());
+		return target;
+	}
+
+	public void openAs(CodePaneConfig conf, FileType fileType) {
+		assert SwingUtilities.isEventDispatchThread();
+		int index = tabs.indexOfTab(conf.getPath());
+		tabs.setComponentAt(index, fileType.getOpenPane().apply(conf).getContent());
 	}
 
 	public void registerDecompiler(AdvancedDecompiler decompiler) {
+		assert SwingUtilities.isEventDispatchThread();
 		this.decompiler = new WeakReference<>(decompiler);
 	}
 
 	@Override
 	public void decompileDone() {
+		assert SwingUtilities.isEventDispatchThread();
 		this.progress.setValue(this.progress.getMaximum());
 		this.progress.setString("Done!");
 		SwingUtilities.invokeLater(() -> {
@@ -117,11 +146,13 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
 	@Override
 	public void exceptionCaugth(Throwable ex) {
+		assert SwingUtilities.isEventDispatchThread();
 		// TODO
 	}
 
 	@Override
 	public void fileFound(String path) {
+		assert SwingUtilities.isEventDispatchThread();
 		if (!knownFiles.containsKey(path)) {
 			knownFiles.put(path, null);
 			String[] splitted = path.split("/");
@@ -160,8 +191,9 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
 	@Override
 	public void fileDecompiled(String file, URL url) {
-		if (!expanded) {
-			new Timer(1000, e -> this.files.expandRow(0)).start();
+		if (!expanded && file.endsWith(".class")) {
+			//this.files.expandRow(0);
+			new Timer(100, e -> this.files.expandRow(0)).start();
 			expanded = true;
 		}
 		fileFound(file);
@@ -322,14 +354,18 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 					LOG.info(total);
 					assert knownFiles.containsKey(total);
 					URL url = knownFiles.get(total);
-					CodePane page = new CodePaneConfig(total, url, config).createPane();
-
+					CodePaneConfig conf = new CodePaneConfig(total, url, config);
+					CodePane page = conf.createPane();
+					if (page == null) {
+						page = new UnknownCodePane(conf, this);
+					}
 					tabs.addTab(total, page.getIcon(url != null), page.getContent());
 					TitleBar titleBar = new TitleBar(part.getPart());
 					int index = tabs.indexOfTab(total);
 					tabs.setTabComponentAt(index, titleBar);
 					titleBar.addActionListener((ActionEvent e) -> {
-						tabs.removeTabAt(index);
+						int newIndex = tabs.indexOfTab(total);
+						tabs.removeTabAt(newIndex);
 						openFiles.remove(total);
 					});
 					openFiles.put(total, page);

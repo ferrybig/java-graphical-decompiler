@@ -12,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,6 +22,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -73,9 +76,14 @@ public class MainForm extends javax.swing.JFrame {
         exitButton = new JMenuItem();
         editMenu = new JMenu();
 
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setLocationByPlatform(true);
         setSize(new Dimension(1024, 768));
+        addWindowListener(new WindowAdapter() {
+            public void windowClosed(WindowEvent evt) {
+                formWindowClosed(evt);
+            }
+        });
         getContentPane().setLayout(new GridBagLayout());
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -138,6 +146,16 @@ public class MainForm extends javax.swing.JFrame {
 		}
 		this.mainBody1.openFile(files.getSelectedFile());
     }//GEN-LAST:event_openButtonActionPerformed
+
+    private void formWindowClosed(WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+		try {
+			mainBody1.programClosed();
+		} catch (InterruptedException ex) {
+			LOG.log(Level.SEVERE, null, ex);
+		}
+		LOG.info("Exiting..");
+		System.exit(0);
+    }//GEN-LAST:event_formWindowClosed
 
 	/**
 	 * @param args the command line arguments

@@ -7,6 +7,7 @@ package me.ferrybig.javacoding.graphical.decompiler.media;
 
 import java.net.URL;
 import java.util.logging.Logger;
+import javax.annotation.CheckForNull;
 import me.ferrybig.javacoding.graphical.decompiler.Config;
 
 /**
@@ -46,13 +47,14 @@ public class CodePaneConfig {
 		return new CodePaneConfig(path, url, config);
 	}
 
+	@CheckForNull
 	public CodePane createPane() {
 		if (this.getUrl() == null) {
 			return new LoadingPane(this);
 		}
 		FileType findFileType = FileType.findFileType(path);
 		if (findFileType == null) {
-			throw new IllegalArgumentException("Not defined!");
+			return null;
 		}
 		return findFileType.getOpenPane().apply(this);
 	}
