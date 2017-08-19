@@ -26,6 +26,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -241,6 +242,8 @@ public class AdvancedDecompiler implements Decompiler {
 			super.done();
 			try {
 				this.get();
+			} catch(CancellationException e) {
+				LOG.log(Level.INFO, "Cancelled task");
 			} catch (ExecutionException | InterruptedException e) {
 				LOG.log(Level.WARNING, "Exception during decompilation:", e);
 				listener.exceptionCaugth(e);
