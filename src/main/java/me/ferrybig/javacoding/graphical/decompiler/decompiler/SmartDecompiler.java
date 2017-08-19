@@ -116,7 +116,7 @@ public class SmartDecompiler implements DecompileTask {
 				PerThreadStatus[] taskById = new PerThreadStatus[8];
 				String line;
 				while ((line = r.readLine()) != null) {
-					LOG.log(Level.INFO, "Read: {0}", line);
+					LOG.log(Level.FINE, "Read: {0}", line);
 					if (line.equals("[CFRTalker] Taskpool: options-done")) {
 						if (waitingForOptionsAck) {
 							if (newOptions) {

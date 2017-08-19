@@ -23,7 +23,7 @@ public interface DecompileListener {
 
 	public void exceptionCaugth(Throwable ex);
 
-	public void setProgress(int progress);
+	public void setProgress(int progress, int totalFiles, int filesDecompiled);
 
 	public Path getTemporaryPath() throws IOException;
 }

@@ -5,6 +5,8 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler.decompiler;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
@@ -57,9 +59,23 @@ public class AdvancedDecompiler implements Decompiler {
 		this.jarFile = jarFile;
 		this.listener = listener;
 		this.config = config;
-		this.worker.addPropertyChangeListener(e -> {
-			if (e.getPropertyName().equals("progress")) {
-				listener.setProgress((int) e.getNewValue());
+		this.worker.addPropertyChangeListener(new PropertyChangeListener() {
+			int total = 0;
+			int decompiled = 0;
+
+			@Override
+			public void propertyChange(PropertyChangeEvent e) {
+				switch (e.getPropertyName()) {
+					case "progress":
+						listener.setProgress((int) e.getNewValue(), total, decompiled);
+						break;
+					case "total":
+						total = (int) e.getNewValue();
+						break;
+					case "decompiled":
+						decompiled = (int) e.getNewValue();
+						break;
+				}
 			}
 		});
 	}
@@ -133,6 +149,8 @@ public class AdvancedDecompiler implements Decompiler {
 		private final List<Consumer<Map<String, Integer>>> priority = new CopyOnWriteArrayList<>();
 		private final List<String> remaining = new ArrayList<>();
 		private final Map<String, Integer> prio = new HashMap<>();
+		private int total = 0;
+		private int decompiled = 0;
 
 		@Override
 		public boolean checkCancelation() {
@@ -150,6 +168,11 @@ public class AdvancedDecompiler implements Decompiler {
 		@Override
 		public void fileDecompiled(String file, URL url) {
 			this.publish(new FilePair(file, url));
+			if (total != 0) {
+				int old = decompiled++;
+				this.firePropertyChange("decompiled", old, decompiled);
+				this.setProgress(decompiled * 100 / total);
+			}
 		}
 
 		@Override
@@ -188,21 +211,28 @@ public class AdvancedDecompiler implements Decompiler {
 
 		@Override
 		protected Object doInBackground() throws Exception {
-			activeDecompiler = new FileDecompiler(jarFile);
-			activeDecompiler.decompile(this);
+			{
+				FileDecompiler decompiler = new FileDecompiler(jarFile);
+				activeDecompiler = decompiler;
+				decompiler.decompile(this);
+			}
 			int size = remaining.size();
+			this.firePropertyChange("total", 0, size);
+			total = size;
 			if (size == 0) {
 				return null;
 			}
 			Path tmp = listener.getTemporaryPath();
 			if (size > 32) {
-				activeDecompiler = new SmartDecompiler(Collections.emptyList(), tmp, jarFile.toPath(), remaining);
-				if (activeDecompiler.decompile(this)) {
+				SmartDecompiler decompiler = new SmartDecompiler(Collections.emptyList(), tmp, jarFile.toPath(), remaining);
+				activeDecompiler = decompiler;
+				if (decompiler.decompile(this)) {
 					return null;
 				}
 			}
-			activeDecompiler = new DumbDecompiler(Collections.emptyList(), tmp, jarFile.toPath());
-			activeDecompiler.decompile(this);
+			DumbDecompiler decompiler = new DumbDecompiler(Collections.emptyList(), tmp, jarFile.toPath());
+			activeDecompiler = decompiler;
+			decompiler.decompile(this);
 			return null;
 		}
 

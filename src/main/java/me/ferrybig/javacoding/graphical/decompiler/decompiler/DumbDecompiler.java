@@ -47,22 +47,11 @@ public class DumbDecompiler implements DecompileTask {
 
 	@Override
 	public boolean decompile(DecompileData data) throws Exception {
-		decompileClassPath.add(System.getProperty("java.home") + "/lib/rt.jar");
-
-		List<String> runClassPath = new ArrayList<>();
-		String mainClass;
-		final Class<CFRTalker> cfrClass = CFRTalker.class;
-
-		final URL url = cfrClass.getResource(cfrClass.getSimpleName().replace(".", "/") + ".class");
-		mainClass = "org.benf.cfr.reader.Main";
-		runClassPath.add(data.getConfig().getCfr().getAbsolutePath());
-
-		System.out.println(url.getFile());
 		List<String> cmd = new ArrayList<>();
 		cmd.add(System.getProperty("java.home") + "/bin/java");
 		cmd.add("-cp");
-		cmd.add(runClassPath.stream().collect(Collectors.joining(File.pathSeparator)));
-		cmd.add(mainClass);
+		cmd.add(data.getConfig().getCfr().getAbsolutePath());
+		cmd.add("org.benf.cfr.reader.Main");
 		cmd.add("--outputdir");
 		cmd.add(tmpDir.toAbsolutePath().toString());
 		cmd.add(jarFile.toAbsolutePath().toString());

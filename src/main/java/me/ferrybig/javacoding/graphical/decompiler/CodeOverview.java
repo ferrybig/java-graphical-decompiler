@@ -8,6 +8,7 @@ package me.ferrybig.javacoding.graphical.decompiler;
 import me.ferrybig.javacoding.graphical.decompiler.decompiler.AdvancedDecompiler;
 import me.ferrybig.javacoding.graphical.decompiler.decompiler.DecompileListener;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -22,8 +23,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -32,6 +35,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -62,6 +66,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	private Path tmp;
 	private WeakReference<AdvancedDecompiler> decompiler = new WeakReference<>(null);
 	private boolean expanded = false;
+	private long startTime = 0;
 
 	public CodeOverview(String base, String fullName, Config config) {
 		this.base = base;
@@ -99,9 +104,15 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
 	@Override
 	public void decompileDone() {
-		this.progress.setValue(100);
+		this.progress.setValue(this.progress.getMaximum());
 		this.progress.setString("Done!");
-		this.remove(progressPanel);
+		SwingUtilities.invokeLater(() -> {
+			this.remove(progressPanel);
+			this.progress = null;
+			this.progressFiles = null;
+			this.progressPanel = null;
+			this.progressTimeleft = null;
+		});
 	}
 
 	@Override
@@ -156,7 +167,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		fileFound(file);
 		this.progress.setString("Decompiled: " + file);
 		if (knownFiles.get(file) != null) {
-			LOG.warning("Dublicate decoding of file " + file);
+			LOG.log(Level.WARNING, "Dublicate decoding of file {0}", file);
 		}
 		knownFiles.put(file, url);
 		if (openFiles.containsKey(file)) {
@@ -172,8 +183,21 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	}
 
 	@Override
-	public void setProgress(int progress) {
-		this.progress.setValue(progress);
+	public void setProgress(int progress, int totalFiles, int filesDecompiled) {
+		this.progress.setMaximum(totalFiles);
+		this.progress.setValue(filesDecompiled);
+		if (startTime == 0) {
+			startTime = System.nanoTime();
+		}
+		this.progressFiles.setText(filesDecompiled + "/" + totalFiles);
+		if (filesDecompiled < 10) {
+			return;
+		}
+		long elapsedTime = System.nanoTime() - startTime;
+		long allTimeForDownloading = (elapsedTime * totalFiles / filesDecompiled);
+		long remainingTime = allTimeForDownloading - elapsedTime;
+		this.progressTimeleft.setText(remainingTime / 1000000 / 1000d + "s left");
+
 	}
 
 	private void resendPriorityLists() {
@@ -200,16 +224,20 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
     private void initComponents() {
         GridBagConstraints gridBagConstraints;
 
-        jSplitPane1 = new JSplitPane();
-        jScrollPane1 = new JScrollPane();
+        mainSplit = new JSplitPane();
+        filesScrollPane = new JScrollPane();
         files = new JTree();
         tabs = new JTabbedPane();
         progressPanel = new JPanel();
         progress = new JProgressBar();
+        Box.Filler progressFillerLeft = new Box.Filler(new Dimension(80, 0), new Dimension(80, 0), new Dimension(80, 32767));
+        Box.Filler progressFillerRigth = new Box.Filler(new Dimension(80, 0), new Dimension(80, 0), new Dimension(80, 32767));
+        progressTimeleft = new JLabel();
+        progressFiles = new JLabel();
 
         setLayout(new GridBagLayout());
 
-        jSplitPane1.setDividerLocation(300);
+        mainSplit.setDividerLocation(300);
 
         files.setModel(this.treeModel);
         files.setCellRenderer(new CustomTreeCellRenderer());
@@ -218,31 +246,54 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
                 filesMousePressed(evt);
             }
         });
-        jScrollPane1.setViewportView(files);
+        filesScrollPane.setViewportView(files);
 
-        jSplitPane1.setLeftComponent(jScrollPane1);
+        mainSplit.setLeftComponent(filesScrollPane);
 
         tabs.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent evt) {
                 tabsStateChanged(evt);
             }
         });
-        jSplitPane1.setRightComponent(tabs);
+        mainSplit.setRightComponent(tabs);
 
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.fill = GridBagConstraints.BOTH;
         gridBagConstraints.weightx = 0.1;
         gridBagConstraints.weighty = 0.1;
-        add(jSplitPane1, gridBagConstraints);
+        add(mainSplit, gridBagConstraints);
 
         progressPanel.setLayout(new GridBagLayout());
 
         progress.setStringPainted(true);
         gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = GridBagConstraints.BOTH;
-        gridBagConstraints.anchor = GridBagConstraints.LINE_START;
+        gridBagConstraints.anchor = GridBagConstraints.BASELINE_LEADING;
         gridBagConstraints.weightx = 0.1;
         progressPanel.add(progress, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        progressPanel.add(progressFillerLeft, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 1;
+        progressPanel.add(progressFillerRigth, gridBagConstraints);
+
+        progressTimeleft.setText("??? s left");
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = GridBagConstraints.BASELINE;
+        progressPanel.add(progressTimeleft, gridBagConstraints);
+
+        progressFiles.setText("0 / 0 files");
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        progressPanel.add(progressFiles, gridBagConstraints);
 
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
@@ -295,10 +346,12 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JTree files;
-    private JScrollPane jScrollPane1;
-    private JSplitPane jSplitPane1;
+    private JScrollPane filesScrollPane;
+    private JSplitPane mainSplit;
     private JProgressBar progress;
+    private JLabel progressFiles;
     private JPanel progressPanel;
+    private JLabel progressTimeleft;
     private JTabbedPane tabs;
     // End of variables declaration//GEN-END:variables
 
