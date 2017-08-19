@@ -98,7 +98,6 @@ public class SmartDecompiler implements DecompileTask {
 		}
 		runClassPath.add(data.getConfig().getCfr().getAbsolutePath());
 
-		System.out.println(url.getFile());
 		List<String> cmd = new ArrayList<>();
 		cmd.add(System.getProperty("java.home") + "/bin/java");
 		cmd.add("-cp");

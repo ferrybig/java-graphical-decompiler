@@ -88,9 +88,9 @@ public class CFRTalker {
 		pool.submit(() -> {
 			try {
 				if (!toDecompile.isEmpty()) {
-					System.out.print("[CFRTalker] Taskpool: task-start: " + threadId + toDecompile.stream().collect(Collectors.joining(" ", " ", "\n")));
+					System.err.print("[CFRTalker] Taskpool: task-start: " + threadId + toDecompile.stream().collect(Collectors.joining(" ", " ", "\n")));
 					executeCFR(toDecompile);
-					System.out.print("[CFRTalker] Taskpool: task-done: " + threadId + "\n");
+					System.err.print("[CFRTalker] Taskpool: task-done: " + threadId + "\n");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -115,7 +115,7 @@ public class CFRTalker {
 	}
 
 	public void sendFinishMessage() {
-		System.out.println("[CFRTalker] Taskpool: done");
+		System.err.println("[CFRTalker] Taskpool: done");
 	}
 
 	public void stop() throws InterruptedException {
@@ -131,7 +131,7 @@ public class CFRTalker {
 		List<String> classes = Arrays.asList(args);
 		CFRTalker main = new CFRTalker();
 		boolean started = false;
-		System.out.println("[CFRTalker] Taskpool: initized");
+		System.err.println("[CFRTalker] Taskpool: initized");
 		try (Scanner scan = new Scanner(System.in)) {
 			mainLoop:
 			while (scan.hasNextLine()) {
@@ -139,7 +139,7 @@ public class CFRTalker {
 				String[] split = line.split("\0");
 				switch (split[0]) {
 					case "start":
-						System.out.println("[CFRTalker] Taskpool: started");
+						System.err.println("[CFRTalker] Taskpool: started");
 						if (!started) {
 							started = true;
 							main.decompiling.clear();
@@ -148,24 +148,24 @@ public class CFRTalker {
 						}
 						break;
 					case "pause":
-						System.out.println("[CFRTalker] Taskpool: paused");
+						System.err.println("[CFRTalker] Taskpool: paused");
 						if (started) {
 							started = false;
 							main.stop();
 						}
 						break;
 					case "exit":
-						System.out.println("[CFRTalker] Taskpool: exited");
+						System.err.println("[CFRTalker] Taskpool: exited");
 						if (started) {
 							main.stop();
 						}
 						break mainLoop;
 					case "classes":
-						System.out.println("[CFRTalker] Taskpool: classes: " + Arrays.toString(split));
+						System.err.println("[CFRTalker] Taskpool: classes: " + Arrays.toString(split));
 						classes = Arrays.stream(split, 1, split.length).collect(Collectors.toList());
 						break;
 					case "options":
-						System.out.println("[CFRTalker] Taskpool: options: " + split.length);
+						System.err.println("[CFRTalker] Taskpool: options: " + split.length);
 						if (started) {
 							main.stop();
 						}
@@ -178,10 +178,10 @@ public class CFRTalker {
 						if (started) {
 							main.start();
 						}
-						System.out.println("[CFRTalker] Taskpool: options-done");
+						System.err.println("[CFRTalker] Taskpool: options-done");
 						break;
 					case "setPrio":
-						System.out.println("[CFRTalker] Taskpool: setprio: " + Arrays.toString(split));
+						System.err.println("[CFRTalker] Taskpool: setprio: " + Arrays.toString(split));
 						Map<String, Integer> prio = new HashMap<>(split.length - 1);
 						for (int i = 1; i < split.length; i++) {
 							String[] argsplit = split[i].split(":", 2);
