@@ -39,6 +39,7 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  *
@@ -75,6 +76,8 @@ public class MainForm extends javax.swing.JFrame {
         menuSeperator = new JPopupMenu.Separator();
         exitButton = new JMenuItem();
         editMenu = new JMenu();
+
+        files.setFileFilter(new FileNameExtensionFilter("Jar files", "jar", "zip"));
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setLocationByPlatform(true);
