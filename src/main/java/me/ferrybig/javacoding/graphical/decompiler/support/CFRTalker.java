@@ -63,6 +63,7 @@ public class CFRTalker {
 			t.setDaemon(true);
 			return t;
 		});
+		threadIdGenerator = 0;
 		stopping = false;
 		for (int i = 0; i < MAX_TASKS; i++) {
 			newTask();
