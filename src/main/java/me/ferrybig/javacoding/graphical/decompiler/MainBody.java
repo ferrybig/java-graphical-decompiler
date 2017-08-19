@@ -6,7 +6,6 @@
 package me.ferrybig.javacoding.graphical.decompiler;
 
 import java.awt.Component;
-import me.ferrybig.javacoding.graphical.decompiler.decompiler.AdvancedDecompiler;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -25,6 +24,7 @@ import java.util.logging.Logger;
 import javax.swing.JComponent;
 import javax.swing.JTabbedPane;
 import javax.swing.Timer;
+import me.ferrybig.javacoding.graphical.decompiler.decompiler.AdvancedDecompiler;
 
 /**
  *

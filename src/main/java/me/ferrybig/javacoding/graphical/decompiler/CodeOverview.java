@@ -15,7 +15,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.nio.file.Files;
@@ -37,7 +36,6 @@ import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -80,6 +78,12 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		this.config = config;
 		this.pathRegistration = pathRegistration;
 		initComponents();
+	}
+
+	@Override
+	public void decompilePerClassStarted(int total) {
+		startTime = System.nanoTime();
+		progressFiles.setText("0/" + total);
 	}
 
 	public void fileUrlUpdated(CodePaneConfig conf, URL url) {
@@ -181,7 +185,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 				}
 				if (child == null) {
 					child = new DefaultMutableTreeNode(p, !last);
-					node.insert(child, size == 0 ? 0 : low); // Maybe use low here...
+					((DefaultTreeModel)files.getModel()).insertNodeInto(child, node, size == 0 ? 0 : low);
 				}
 				node = child;
 			}
@@ -191,12 +195,11 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 
 	@Override
 	public void fileDecompiled(String file, URL url) {
-		if (!expanded && file.endsWith(".class")) {
-			//this.files.expandRow(0);
-			new Timer(100, e -> this.files.expandRow(0)).start();
+		fileFound(file);
+		if (!expanded) {
+			this.files.expandRow(0);
 			expanded = true;
 		}
-		fileFound(file);
 		this.progress.setString("Decompiled: " + file);
 		if (knownFiles.get(file) != null) {
 			LOG.log(Level.WARNING, "Dublicate decoding of file {0}", file);
@@ -218,13 +221,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	public void setProgress(int progress, int totalFiles, int filesDecompiled) {
 		this.progress.setMaximum(totalFiles);
 		this.progress.setValue(filesDecompiled);
-		if (startTime == 0) {
-			startTime = System.nanoTime();
-		}
 		this.progressFiles.setText(filesDecompiled + "/" + totalFiles);
-		if (filesDecompiled < 10) {
-			return;
-		}
 		long elapsedTime = System.nanoTime() - startTime;
 		long allTimeForDownloading = (elapsedTime * totalFiles / filesDecompiled);
 		long remainingTime = allTimeForDownloading - elapsedTime;
@@ -321,7 +318,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
         gridBagConstraints.anchor = GridBagConstraints.BASELINE;
         progressPanel.add(progressTimeleft, gridBagConstraints);
 
-        progressFiles.setText("0 / 0 files");
+        progressFiles.setText("0/?");
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;

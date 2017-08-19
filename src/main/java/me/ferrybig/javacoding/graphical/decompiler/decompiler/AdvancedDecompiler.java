@@ -7,22 +7,12 @@ package me.ferrybig.javacoding.graphical.decompiler.decompiler;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.JarURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,17 +20,10 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
 import javax.swing.SwingWorker;
 import me.ferrybig.javacoding.graphical.decompiler.Config;
-import me.ferrybig.javacoding.graphical.decompiler.support.CFRTalker;
 
 /**
  *
@@ -63,18 +46,25 @@ public class AdvancedDecompiler implements Decompiler {
 		this.worker.addPropertyChangeListener(new PropertyChangeListener() {
 			int total = 0;
 			int decompiled = 0;
+			int progress = 0;
 
 			@Override
 			public void propertyChange(PropertyChangeEvent e) {
 				switch (e.getPropertyName()) {
 					case "progress":
-						listener.setProgress((int) e.getNewValue(), total, decompiled);
+						progress = (int) e.getNewValue();
+						listener.setProgress(progress, total, decompiled);
 						break;
 					case "total":
 						total = (int) e.getNewValue();
 						break;
 					case "decompiled":
 						decompiled = (int) e.getNewValue();
+						break;
+					case "decompiler":
+						if(e.getOldValue() instanceof FileDecompiler) {
+							listener.decompilePerClassStarted(total);
+						}
 						break;
 				}
 			}
@@ -214,6 +204,7 @@ public class AdvancedDecompiler implements Decompiler {
 		protected Object doInBackground() throws Exception {
 			{
 				FileDecompiler decompiler = new FileDecompiler(jarFile);
+				this.firePropertyChange("decompiler", null, decompiler);
 				activeDecompiler = decompiler;
 				decompiler.decompile(this);
 			}
@@ -226,12 +217,14 @@ public class AdvancedDecompiler implements Decompiler {
 			Path tmp = listener.getTemporaryPath();
 			if (size > 32) {
 				SmartDecompiler decompiler = new SmartDecompiler(Collections.emptyList(), tmp, jarFile.toPath(), remaining);
+				firePropertyChange("decompiler", activeDecompiler, decompiler);
 				activeDecompiler = decompiler;
 				if (decompiler.decompile(this)) {
 					return null;
 				}
 			}
 			DumbDecompiler decompiler = new DumbDecompiler(Collections.emptyList(), tmp, jarFile.toPath());
+			firePropertyChange("decompiler", activeDecompiler, decompiler);
 			activeDecompiler = decompiler;
 			decompiler.decompile(this);
 			return null;
@@ -242,7 +235,7 @@ public class AdvancedDecompiler implements Decompiler {
 			super.done();
 			try {
 				this.get();
-			} catch(CancellationException e) {
+			} catch (CancellationException e) {
 				LOG.log(Level.INFO, "Cancelled task");
 			} catch (ExecutionException | InterruptedException e) {
 				LOG.log(Level.WARNING, "Exception during decompilation:", e);

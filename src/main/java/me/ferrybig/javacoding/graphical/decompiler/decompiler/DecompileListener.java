@@ -21,6 +21,8 @@ public interface DecompileListener {
 
 	public void decompileDone();
 
+	public void decompilePerClassStarted(int total);
+
 	public void exceptionCaugth(Throwable ex);
 
 	public void setProgress(int progress, int totalFiles, int filesDecompiled);
