@@ -6,14 +6,24 @@
 package me.ferrybig.javacoding.graphical.decompiler;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.JarURLConnection;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.annotation.Nonnull;
 
 /**
  *
  * @author Fernando
  */
 public final class Config {
+
+	private static final Logger LOG = Logger.getLogger(Config.class.getName());
 
 	private volatile File cfr = new File("cfr_0_119.jar");
 
@@ -25,8 +35,36 @@ public final class Config {
 		return cfr;
 	}
 
+	@Nonnull
+	public Optional<File> getRunningLocation() {
+		try {
+			URL url = Config.class.getResource(Config.class.getSimpleName().replace(".", "/") + ".class");
+			if (url.getProtocol().equals("jar") && url.toString().startsWith("jar:file")) {
+
+				final JarURLConnection connection
+						= (JarURLConnection) url.openConnection();
+				final URL fileurl = connection.getJarFileURL();
+				assert fileurl.getProtocol().equals("file");
+				return Optional.of(new File(fileurl.toURI()));
+			} else if (url.getProtocol().equals("file")) {
+				String file = new File(url.toURI()).getAbsolutePath();
+				int parentDirs = Config.class.getPackage().getName().split("\\.").length + (Config.class.getPackage().getName().isEmpty() ? 0 : 1);
+				for (int i = 0; i < parentDirs; i++) {
+					file = new File(file).getParent();
+				}
+				return Optional.of(new File(file));
+			} else {
+				return Optional.empty();
+			}
+		} catch (IOException | URISyntaxException ex) {
+			LOG.log(Level.SEVERE, null, ex);
+		}
+		return Optional.empty();
+	}
+
 	public void rescanCfr() {
-		File[] toScan = new File[]{new File("."), new File("lib")};
+
+		File[] toScan = new File[]{getRunningLocation().orElse(new File(".")), new File("lib")};
 		File latestVersion = null;
 		Predicate<String> cfrJar = Pattern.compile("cfr_0_\\d{1,3}.jar").asPredicate();
 		for (File dir : toScan) {
