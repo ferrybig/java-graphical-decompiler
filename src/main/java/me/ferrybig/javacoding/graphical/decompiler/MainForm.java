@@ -47,12 +47,12 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  */
 public class MainForm extends javax.swing.JFrame {
 
-	/**
-	 * Creates new form MainForm
-	 */
-	public MainForm() {
+	private final Config config;
+
+	public MainForm(Config config) {
+		this.config = config;
+		mainBody1.setConfig(config);
 		initComponents();
-		mainBody1.setConfig(new Config());
 	}
 
 	/**
@@ -178,7 +178,7 @@ public class MainForm extends javax.swing.JFrame {
 
 		/* Create and display the form */
 		java.awt.EventQueue.invokeLater(() -> {
-			MainForm mainForm = new MainForm();
+			MainForm mainForm = new MainForm(new Config());
 			mainForm.mainBody1.registerLoggingHandler();
 			mainForm.setVisible(true);
 			mainForm.checkCFRExists(args);
@@ -228,9 +228,10 @@ public class MainForm extends javax.swing.JFrame {
 			}
 			URLConnection openConnection = cfrDownload.openConnection();
 			long contentLength = openConnection.getContentLengthLong();
-			File target = new File("lib");
+			File runningLocation = config.getRunningLocation().orElse(new File("."));
+			File target = new File(runningLocation, "lib");
 			if (!target.exists()) {
-				target = new File(".");
+				target = runningLocation;
 			}
 			target = new File(target, cfrName);
 			try (BufferedInputStream reader = new BufferedInputStream(openConnection.getInputStream())) {
