@@ -5,6 +5,14 @@
 	<formats>
 		<format>zip</format>
 	</formats>
+	<files>
+		<file>
+			<source>src/distribution/install.cmd</source>
+			<outputDirectory></outputDirectory>
+			<lineEnding>windows</lineEnding>
+			<filtered>true</filtered>
+		</file>
+	</files>
 	<dependencySets>
 		<dependencySet>
 			<outputDirectory>/lib</outputDirectory>
