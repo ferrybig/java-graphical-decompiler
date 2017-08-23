@@ -51,8 +51,8 @@ public class MainForm extends javax.swing.JFrame {
 
 	public MainForm(Config config) {
 		this.config = config;
-		mainBody1.setConfig(config);
 		initComponents();
+		mainBody1.setConfig(config);
 	}
 
 	/**
