@@ -45,7 +45,7 @@ public final class Config {
 						= (JarURLConnection) url.openConnection();
 				final URL fileurl = connection.getJarFileURL();
 				assert fileurl.getProtocol().equals("file");
-				return Optional.of(new File(fileurl.toURI()));
+				return Optional.of(new File(fileurl.toURI()).getParentFile());
 			} else if (url.getProtocol().equals("file")) {
 				String file = new File(url.toURI()).getAbsolutePath();
 				int parentDirs = Config.class.getPackage().getName().split("\\.").length + (Config.class.getPackage().getName().isEmpty() ? 0 : 1);
@@ -63,8 +63,9 @@ public final class Config {
 	}
 
 	public void rescanCfr() {
-
-		File[] toScan = new File[]{getRunningLocation().orElse(new File(".")), new File("lib")};
+		final File runningLocation = getRunningLocation().orElse(new File("."));
+		LOG.log(Level.INFO, "Our application is location in: {0}", runningLocation);
+		File[] toScan = new File[]{runningLocation, new File(runningLocation, "lib")};
 		File latestVersion = null;
 		Predicate<String> cfrJar = Pattern.compile("cfr_0_\\d{1,3}.jar").asPredicate();
 		for (File dir : toScan) {
@@ -74,6 +75,7 @@ public final class Config {
 			}
 			for (File cfr : listFiles) {
 				if (latestVersion == null || latestVersion.compareTo(cfr) < 0) {
+					LOG.log(Level.INFO, "Found cfr: {0}", cfr);
 					latestVersion = cfr;
 				}
 			}

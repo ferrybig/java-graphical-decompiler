@@ -178,7 +178,11 @@ public class MainForm extends javax.swing.JFrame {
 
 		/* Create and display the form */
 		java.awt.EventQueue.invokeLater(() -> {
-			MainForm mainForm = new MainForm(new Config());
+			LOG.log(Level.INFO, "Starting...");
+			final Config config = new Config();
+			config.rescanCfr();
+			LOG.log(Level.INFO, "Our application is location in: {0}", config.getRunningLocation());
+			MainForm mainForm = new MainForm(config);
 			mainForm.mainBody1.registerLoggingHandler();
 			mainForm.setVisible(true);
 			mainForm.checkCFRExists(args);
