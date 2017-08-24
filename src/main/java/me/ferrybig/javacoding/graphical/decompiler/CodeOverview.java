@@ -9,11 +9,14 @@ import me.ferrybig.javacoding.graphical.decompiler.decompiler.AdvancedDecompiler
 import me.ferrybig.javacoding.graphical.decompiler.decompiler.DecompileListener;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.URL;
@@ -21,10 +24,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.swing.Box;
 import javax.swing.ImageIcon;
@@ -64,10 +73,12 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	private final DefaultMutableTreeNode parent;
 	private final String fullName;
 	private final Config config;
+	private final List<BiConsumer<String, URL>> decompileListeners = new CopyOnWriteArrayList<>();
 	private Path tmp;
 	private WeakReference<AdvancedDecompiler> decompiler = new WeakReference<>(null);
 	private boolean expanded = false;
 	private long startTime = 0;
+	private boolean done = false;
 
 	public CodeOverview(String base, String fullName, Config config, Consumer<Path> pathRegistration) {
 		assert SwingUtilities.isEventDispatchThread();
@@ -84,6 +95,8 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	public void decompilePerClassStarted(int total) {
 		startTime = System.nanoTime();
 		progressFiles.setText("0/" + total);
+		this.firePropertyChange("startTime", 0, startTime);
+		this.firePropertyChange("total", 0, total);
 	}
 
 	public void fileUrlUpdated(CodePaneConfig conf, URL url) {
@@ -134,9 +147,19 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		this.decompiler = new WeakReference<>(decompiler);
 	}
 
+	public boolean addDecompileListener(BiConsumer<String, URL> listener) {
+		return this.decompileListeners.add(listener);
+	}
+
+	public boolean removeDecompileListener(BiConsumer<String, URL> listener) {
+		return this.decompileListeners.remove(listener);
+	}
+
 	@Override
 	public void decompileDone() {
 		assert SwingUtilities.isEventDispatchThread();
+		this.done = true;
+		this.firePropertyChange("done", false, true);
 		this.progress.setValue(this.progress.getMaximum());
 		this.progress.setString("Done!");
 		SwingUtilities.invokeLater(() -> {
@@ -185,7 +208,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 				}
 				if (child == null) {
 					child = new DefaultMutableTreeNode(p, !last);
-					((DefaultTreeModel)files.getModel()).insertNodeInto(child, node, size == 0 ? 0 : low);
+					((DefaultTreeModel) files.getModel()).insertNodeInto(child, node, size == 0 ? 0 : low);
 				}
 				node = child;
 			}
@@ -215,6 +238,9 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 			}
 		}
 		((DefaultTreeModel) files.getModel()).nodeChanged(filesMapping.get(file));
+		for (BiConsumer<String, URL> listener : decompileListeners) {
+			listener.accept(file, url);
+		}
 	}
 
 	@Override
@@ -241,6 +267,57 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 			}
 		}
 		get.setPriority(priorityCache);
+	}
+
+	public void startSearch(Pattern pattern, Pattern filePattern) {
+		FindResults results = new FindResults((Frame) SwingUtilities.getWindowAncestor(this), pattern);
+		if (this.startTime == 0) {
+			PropertyChangeListener listener = new PropertyChangeListener() {
+				@Override
+				public void propertyChange(PropertyChangeEvent evt) {
+					if (!evt.getPropertyName().equals("startTime")) {
+						return;
+					}
+					startSearch0(pattern, filePattern, results);
+					CodeOverview.this.removePropertyChangeListener(this);
+				}
+			};
+			this.addPropertyChangeListener(listener);
+		} else {
+			startSearch0(pattern, filePattern, results);
+		}
+		results.setVisible(true);
+	}
+
+	private void startSearch0(Pattern pattern, Pattern filePattern, FindResults results) {
+		Map<String, URL> files = new LinkedHashMap<>();
+		Predicate<String> matches = filePattern.asPredicate();
+		boolean needListener = false;
+		for (Map.Entry<String, URL> file : this.knownFiles.entrySet()) {
+			if (!matches.test(file.getKey())) {
+				continue;
+			}
+			if (file.getValue() == null) {
+				needListener = true;
+			}
+			files.put(file.getKey(), file.getValue());
+		}
+		FindWorker worker = new FindWorker(files, pattern, results::add, results::finish);
+		if (needListener) {
+			BiConsumer<String, URL> decompileListener = worker::updateUrl;
+			PropertyChangeListener listener = new PropertyChangeListener() {
+				@Override
+				public void propertyChange(PropertyChangeEvent evt) {
+					if (!"done".equals(evt.getPropertyName())) {
+						return;
+					}
+					CodeOverview.this.removeDecompileListener(decompileListener);
+					CodeOverview.this.removePropertyChangeListener(this);
+				}
+			};
+			this.addPropertyChangeListener(listener);
+		}
+		worker.execute();
 	}
 
 	/**
@@ -388,20 +465,24 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
     private JTabbedPane tabs;
     // End of variables declaration//GEN-END:variables
 
-	private class PathPart implements Comparable<PathPart> {
+	private static class PathPart implements Comparable<PathPart> {
 
 		private final String total;
 		private final String part;
-		private final boolean dir;
+		private final boolean directory;
 
 		@Override
 		public int compareTo(PathPart o) {
-			int c = Boolean.compare(dir, o.dir);
-			if (c == 0) {
-				return part.compareToIgnoreCase(o.part);
-			} else {
+			int c = Boolean.compare(directory, o.directory);
+			if (c != 0) {
 				return c;
 			}
+			c = part.compareToIgnoreCase(o.part);
+			if (c != 0) {
+				return c;
+			}
+			c = part.compareTo(o.part);
+			return c;
 		}
 
 		public String getTotal() {
@@ -412,10 +493,10 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 			return part;
 		}
 
-		public PathPart(String total, String part, boolean dir) {
+		public PathPart(String total, String part, boolean directory) {
 			this.total = total;
 			this.part = part;
-			this.dir = dir;
+			this.directory = directory;
 		}
 
 		@Override

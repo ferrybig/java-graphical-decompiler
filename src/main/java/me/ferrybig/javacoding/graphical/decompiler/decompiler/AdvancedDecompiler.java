@@ -62,7 +62,7 @@ public class AdvancedDecompiler implements Decompiler {
 						decompiled = (int) e.getNewValue();
 						break;
 					case "decompiler":
-						if(e.getOldValue() instanceof FileDecompiler) {
+						if (e.getOldValue() instanceof FileDecompiler) {
 							listener.decompilePerClassStarted(total);
 						}
 						break;

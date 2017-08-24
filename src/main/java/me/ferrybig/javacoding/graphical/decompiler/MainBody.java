@@ -162,4 +162,12 @@ public class MainBody extends javax.swing.JPanel {
     private DebugPane debugPane;
     private JTabbedPane mainPane;
     // End of variables declaration//GEN-END:variables
+
+	public CodeOverview getSelectedTab() {
+		Component selectedComponent = this.mainPane.getSelectedComponent();
+		if (selectedComponent instanceof CodeOverview) {
+			return (CodeOverview) selectedComponent;
+		}
+		return null;
+	}
 }

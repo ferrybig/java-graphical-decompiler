@@ -51,8 +51,8 @@ public class MainForm extends javax.swing.JFrame {
 
 	public MainForm(Config config) {
 		this.config = config;
-		mainBody1.setConfig(config);
 		initComponents();
+		mainBody1.setConfig(config);
 	}
 
 	/**
@@ -69,6 +69,7 @@ public class MainForm extends javax.swing.JFrame {
         mainBody1 = new MainBody();
         jToolBar1 = new JToolBar();
         jButton1 = new JButton();
+        findInFilesAction = new JButton();
         mainMenu = new JMenuBar();
         fileMenu = new JMenu();
         openButton = new JMenuItem();
@@ -109,6 +110,17 @@ public class MainForm extends javax.swing.JFrame {
             }
         });
         jToolBar1.add(jButton1);
+
+        findInFilesAction.setText("Find in files");
+        findInFilesAction.setFocusable(false);
+        findInFilesAction.setHorizontalTextPosition(SwingConstants.CENTER);
+        findInFilesAction.setVerticalTextPosition(SwingConstants.BOTTOM);
+        findInFilesAction.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                findInFilesActionActionPerformed(evt);
+            }
+        });
+        jToolBar1.add(findInFilesAction);
 
         gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.fill = GridBagConstraints.BOTH;
@@ -159,6 +171,15 @@ public class MainForm extends javax.swing.JFrame {
 		LOG.info("Exiting..");
 		System.exit(0);
     }//GEN-LAST:event_formWindowClosed
+
+    private void findInFilesActionActionPerformed(ActionEvent evt) {//GEN-FIRST:event_findInFilesActionActionPerformed
+		CodeOverview view = this.mainBody1.getSelectedTab();
+		if (view == null) {
+			return;
+		}
+
+		new FindDialog(this, view, true).setVisible(true);
+    }//GEN-LAST:event_findInFilesActionActionPerformed
 
 	/**
 	 * @param args the command line arguments
@@ -249,6 +270,7 @@ public class MainForm extends javax.swing.JFrame {
     private JMenuItem exitButton;
     private JMenu fileMenu;
     private JFileChooser files;
+    private JButton findInFilesAction;
     private JButton jButton1;
     private JToolBar jToolBar1;
     private MainBody mainBody1;
