@@ -40,6 +40,7 @@ import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import me.ferrybig.javacoding.graphical.decompiler.find.FindDialog;
 
 /**
  *

@@ -5,8 +5,6 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler;
 
-import me.ferrybig.javacoding.graphical.decompiler.decompiler.AdvancedDecompiler;
-import me.ferrybig.javacoding.graphical.decompiler.decompiler.DecompileListener;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Frame;
@@ -15,6 +13,8 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
@@ -51,6 +51,10 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import me.ferrybig.javacoding.graphical.decompiler.decompiler.AdvancedDecompiler;
+import me.ferrybig.javacoding.graphical.decompiler.decompiler.DecompileListener;
+import me.ferrybig.javacoding.graphical.decompiler.find.FindResults;
+import me.ferrybig.javacoding.graphical.decompiler.find.FindWorker;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePane;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePaneConfig;
 import me.ferrybig.javacoding.graphical.decompiler.media.FileType;
@@ -302,7 +306,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 			}
 			files.put(file.getKey(), file.getValue());
 		}
-		FindWorker worker = new FindWorker(files, pattern, results::add, results::finish);
+		FindWorker worker = new FindWorker(files, pattern, results);
 		if (needListener) {
 			BiConsumer<String, URL> decompileListener = worker::updateUrl;
 			PropertyChangeListener listener = new PropertyChangeListener() {
@@ -315,8 +319,15 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 					CodeOverview.this.removePropertyChangeListener(this);
 				}
 			};
+			this.addDecompileListener(decompileListener);
 			this.addPropertyChangeListener(listener);
 		}
+		results.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				worker.cancel(true);
+			}
+		});
+
 		worker.execute();
 	}
 

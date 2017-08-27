@@ -3,13 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package me.ferrybig.javacoding.graphical.decompiler;
+package me.ferrybig.javacoding.graphical.decompiler.find;
 
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -18,17 +19,20 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.swing.GroupLayout;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.WindowConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import me.ferrybig.javacoding.graphical.decompiler.SearchResult;
+import static me.ferrybig.javacoding.graphical.decompiler.util.HTMLEscape.escapeHTML;
 
 /**
  *
  * @author Fernando
  */
-public class FindResults extends javax.swing.JDialog {
+public class FindResults extends javax.swing.JDialog implements FindWorker.FindListener {
 
 	private static final Logger LOG = Logger.getLogger(FindResults.class.getName());
 	private static final long serialVersionUID = -2073840936612054472L;
@@ -41,6 +45,44 @@ public class FindResults extends javax.swing.JDialog {
 		searching = new DefaultMutableTreeNode("Searching...");
 		root.add(searching);
 		initComponents();
+	}
+
+	@Override
+	public void done(Future<Void> future) {
+		((DefaultTreeModel) tree.getModel()).removeNodeFromParent(searching);
+		try {
+			future.get();
+		} catch (CancellationException ex) {
+			LOG.log(Level.INFO, "Cancelled");
+		} catch (InterruptedException | ExecutionException ex) {
+			LOG.log(Level.SEVERE, null, ex);
+		}
+	}
+
+	@Override
+	public void madeProgress(int progress, String lastFile) {
+		this.progress.setValue(progress);
+		this.progress.setString("Searching in: \n" + lastFile);
+	}
+
+	@Override
+	public void onResult(List<SearchResult> results) {
+		String lastFile = null;
+		DefaultMutableTreeNode lastNode = null;
+		for (SearchResult result : results) {
+			if (!result.getFile().equals(lastFile) || lastNode == null) {
+				lastNode = findOrCreateNode(root, result.getFile(), true);
+			}
+			((DefaultTreeModel) tree.getModel()).insertNodeInto(
+					new DefaultMutableTreeNode(result.getLineNumber() + ": " + result.getMatch().get(result.getListLineNumber())),
+					lastNode, lastNode.getChildCount());
+		}
+	}
+
+	@Override
+	public void totalCalculated(int total) {
+		this.progress.setMaximum(total);
+		this.progress.setIndeterminate(false);
 	}
 
 	private DefaultMutableTreeNode findOrCreateNode(DefaultMutableTreeNode node, String name, boolean children) {
@@ -69,28 +111,6 @@ public class FindResults extends javax.swing.JDialog {
 		return child;
 	}
 
-	public void add(List<SearchResult> results) {
-		String lastFile = null;
-		DefaultMutableTreeNode lastNode = null;
-		for (SearchResult result : results) {
-			if (!result.getFile().equals(lastFile) || lastNode == null) {
-				lastNode = findOrCreateNode(root, result.getFile(), true);
-			}
-			((DefaultTreeModel) tree.getModel()).insertNodeInto(
-					new DefaultMutableTreeNode(result.getLineNumber() + ": " + result.getMatch().get(result.getListLineNumber())),
-					lastNode, lastNode.getChildCount());
-		}
-	}
-
-	public void finish(Future<?> future) {
-		((DefaultTreeModel) tree.getModel()).removeNodeFromParent(searching);
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException ex) {
-			LOG.log(Level.SEVERE, null, ex);
-		}
-	}
-
 	/**
 	 * This method is called from within the constructor to initialize the form.
 	 * WARNING: Do NOT modify this code. The content of this method is always
@@ -103,6 +123,7 @@ public class FindResults extends javax.swing.JDialog {
 
         scroll = new JScrollPane();
         tree = new JTree();
+        progress = new JProgressBar();
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Find results");
@@ -118,10 +139,21 @@ public class FindResults extends javax.swing.JDialog {
         gridBagConstraints.weighty = 1.0;
         getContentPane().add(scroll, gridBagConstraints);
 
+        progress.setIndeterminate(true);
+        progress.setString("...");
+        progress.setStringPainted(true);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        getContentPane().add(progress, gridBagConstraints);
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private JProgressBar progress;
     private JScrollPane scroll;
     private JTree tree;
     // End of variables declaration//GEN-END:variables

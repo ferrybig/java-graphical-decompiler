@@ -9,6 +9,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.logging.LogRecord;
+import static me.ferrybig.javacoding.graphical.decompiler.util.HTMLEscape.escapeHTML;
 
 /**
  *
@@ -46,7 +47,7 @@ public class LogRecordPanel extends javax.swing.JPanel {
 			record.getThrown().printStackTrace(new PrintWriter(writer));
 			txt = writer.toString();
 		}
-		exception.setText(txt);
+		exception.setText("<html>" + escapeHTML(txt));
 	}
 
 	private final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
