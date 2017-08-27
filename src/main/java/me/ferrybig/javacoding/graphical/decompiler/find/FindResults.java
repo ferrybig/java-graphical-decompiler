@@ -32,7 +32,7 @@ import static me.ferrybig.javacoding.graphical.decompiler.util.HTMLEscape.escape
  *
  * @author Fernando
  */
-public class FindResults extends javax.swing.JDialog implements FindWorker.FindListener {
+public class FindResults extends javax.swing.JDialog implements FindListener {
 
 	private static final Logger LOG = Logger.getLogger(FindResults.class.getName());
 	private static final long serialVersionUID = -2073840936612054472L;

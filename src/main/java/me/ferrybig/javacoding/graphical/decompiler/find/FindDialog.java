@@ -5,19 +5,31 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler.find;
 
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.Beans;
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JFormattedTextField;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle;
 import javax.swing.WindowConstants;
+import javax.swing.text.DefaultFormatterFactory;
 import me.ferrybig.javacoding.graphical.decompiler.CodeOverview;
 
 /**
@@ -36,6 +48,22 @@ public class FindDialog extends javax.swing.JDialog {
 		initComponents();
 	}
 
+	private Pattern tryCompile() throws ParseException {
+		String pattern = textField.getText();
+		int flags = 0;
+		if (!regex.isSelected()) {
+			flags |= Pattern.LITERAL;
+		}
+		if (caseInsensitivity.isSelected()) {
+			flags |= Pattern.CASE_INSENSITIVE;
+		}
+		try {
+			return Pattern.compile(pattern, flags);
+		} catch (PatternSyntaxException ex) {
+			throw (ParseException) new ParseException(pattern, ex.getIndex()).initCause(ex);
+		}
+	}
+
 	/**
 	 * This method is called from within the constructor to initialize the form.
 	 * WARNING: Do NOT modify this code. The content of this method is always
@@ -44,23 +72,20 @@ public class FindDialog extends javax.swing.JDialog {
 	@SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
+        GridBagConstraints gridBagConstraints;
 
-        textField = new JTextField();
         fileTypes = new JComboBox<>();
         searchButton = new JButton();
         regex = new JCheckBox();
         caseInsensitivity = new JCheckBox();
+        textField = new JTextField();
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-
-        textField.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                searchSubmit(evt);
-            }
-        });
+        setLocationByPlatform(true);
+        getContentPane().setLayout(new GridBagLayout());
 
         fileTypes.setEditable(true);
-        fileTypes.setModel(new DefaultComboBoxModel<>(new String[] { "*.class", "*.java", "*.txt" }));
+        fileTypes.setModel(new DefaultComboBoxModel<>(new String[] { "\\.(?:class|java)$", "\\.class$", "\\.java$" }));
         fileTypes.setToolTipText("Not implemented at the moment");
         fileTypes.setEnabled(false);
         fileTypes.addActionListener(new ActionListener() {
@@ -68,6 +93,13 @@ public class FindDialog extends javax.swing.JDialog {
                 searchSubmit(evt);
             }
         });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.gridwidth = 6;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.insets = new Insets(3, 3, 3, 3);
+        getContentPane().add(fileTypes, gridBagConstraints);
 
         searchButton.setText("Find");
         searchButton.addActionListener(new ActionListener() {
@@ -75,53 +107,50 @@ public class FindDialog extends javax.swing.JDialog {
                 searchSubmit(evt);
             }
         });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 6;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridheight = 3;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new Insets(3, 3, 3, 3);
+        getContentPane().add(searchButton, gridBagConstraints);
 
         regex.setText("Regex");
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new Insets(3, 3, 3, 3);
+        getContentPane().add(regex, gridBagConstraints);
 
         caseInsensitivity.setText("Case insensentive");
-
-        GroupLayout layout = new GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(0, 122, Short.MAX_VALUE)
-                        .addComponent(caseInsensitivity)
-                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(regex))
-                    .addComponent(textField, GroupLayout.Alignment.LEADING)
-                    .addGroup(GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addComponent(fileTypes, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(searchButton)))
-                .addContainerGap())
-        );
-        layout.setVerticalGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(fileTypes, GroupLayout.PREFERRED_SIZE, 22, GroupLayout.PREFERRED_SIZE)
-                    .addComponent(searchButton, GroupLayout.PREFERRED_SIZE, 23, GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                    .addComponent(regex)
-                    .addComponent(caseInsensitivity))
-                .addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 4;
+        gridBagConstraints.gridy = 2;
+        gridBagConstraints.insets = new Insets(3, 3, 3, 3);
+        getContentPane().add(caseInsensitivity, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.gridwidth = 6;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.insets = new Insets(3, 3, 3, 3);
+        getContentPane().add(textField, gridBagConstraints);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void searchSubmit(ActionEvent evt) {//GEN-FIRST:event_searchSubmit
-		String pattern = textField.getText();
-		if (!regex.isSelected()) {
-			pattern = Pattern.quote(pattern);
+		Pattern p;
+		try {
+			p = this.tryCompile();
+		} catch (ParseException ex) {
+			JOptionPane.showMessageDialog(this, ex.getCause().toString(), "Invalid regex", JOptionPane.ERROR_MESSAGE);
+			return;
 		}
-		this.overview.startSearch(Pattern.compile(pattern, caseInsensitivity.isSelected() ? Pattern.CASE_INSENSITIVE : 0), filePattern);
+		if (p == null) {
+			return;
+		}
+		this.overview.startSearch(p, filePattern);
 		this.setVisible(false);
     }//GEN-LAST:event_searchSubmit
 
