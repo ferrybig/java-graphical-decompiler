@@ -146,6 +146,33 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		tabs.setComponentAt(index, fileType.getOpenPane().apply(conf).getContent());
 	}
 
+	public void openFile(String file) {
+		if (!openFiles.containsKey(file)) {
+			LOG.info(file);
+			assert knownFiles.containsKey(file);
+			URL url = knownFiles.get(file);
+			CodePaneConfig conf = new CodePaneConfig(file, url, config);
+			CodePane page = conf.createPane();
+			if (page == null) {
+				page = new UnknownCodePane(conf, this);
+			}
+			tabs.addTab(file, page.getIcon(url != null), page.getContent());
+			TitleBar titleBar = new TitleBar(((PathPart) this.filesMapping.get(file).getUserObject()).getPart());
+			int index = tabs.indexOfTab(file);
+			tabs.setTabComponentAt(index, titleBar);
+			titleBar.addActionListener((ActionEvent e) -> {
+				int newIndex = tabs.indexOfTab(file);
+				tabs.removeTabAt(newIndex);
+				openFiles.remove(file);
+			});
+			openFiles.put(file, page);
+			tabs.setSelectedIndex(index);
+			resendPriorityLists();
+		} else {
+			tabs.setSelectedIndex(tabs.indexOfTab(file));
+		}
+	}
+
 	public void registerDecompiler(AdvancedDecompiler decompiler) {
 		assert SwingUtilities.isEventDispatchThread();
 		this.decompiler = new WeakReference<>(decompiler);
@@ -274,7 +301,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	}
 
 	public void startSearch(Pattern pattern, Pattern filePattern) {
-		FindResults results = new FindResults((Frame) SwingUtilities.getWindowAncestor(this), pattern);
+		FindResults results = new FindResults((Frame) SwingUtilities.getWindowAncestor(this), pattern, this);
 		if (this.startTime == 0) {
 			PropertyChangeListener listener = new PropertyChangeListener() {
 				@Override
@@ -323,6 +350,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 			this.addPropertyChangeListener(listener);
 		}
 		results.addWindowListener(new WindowAdapter() {
+			@Override
 			public void windowClosing(WindowEvent e) {
 				worker.cancel(true);
 			}
@@ -435,28 +463,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 					tabs.setSelectedIndex(tabs.indexOfTab(total));
 				}
 			} else if (evt.getClickCount() == 2) {
-				if (!openFiles.containsKey(total)) {
-					LOG.info(total);
-					assert knownFiles.containsKey(total);
-					URL url = knownFiles.get(total);
-					CodePaneConfig conf = new CodePaneConfig(total, url, config);
-					CodePane page = conf.createPane();
-					if (page == null) {
-						page = new UnknownCodePane(conf, this);
-					}
-					tabs.addTab(total, page.getIcon(url != null), page.getContent());
-					TitleBar titleBar = new TitleBar(part.getPart());
-					int index = tabs.indexOfTab(total);
-					tabs.setTabComponentAt(index, titleBar);
-					titleBar.addActionListener((ActionEvent e) -> {
-						int newIndex = tabs.indexOfTab(total);
-						tabs.removeTabAt(newIndex);
-						openFiles.remove(total);
-					});
-					openFiles.put(total, page);
-					tabs.setSelectedIndex(index);
-					resendPriorityLists();
-				}
+				this.openFile(total);
 			}
 		}
     }//GEN-LAST:event_filesMousePressed

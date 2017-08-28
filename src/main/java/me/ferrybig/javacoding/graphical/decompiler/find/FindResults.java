@@ -8,6 +8,10 @@ package me.ferrybig.javacoding.graphical.decompiler.find;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -25,7 +29,13 @@ import javax.swing.JTree;
 import javax.swing.WindowConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreePath;
+import me.ferrybig.javacoding.graphical.decompiler.CodeOverview;
 import me.ferrybig.javacoding.graphical.decompiler.SearchResult;
+import me.ferrybig.javacoding.graphical.decompiler.TitleBar;
+import me.ferrybig.javacoding.graphical.decompiler.media.CodePane;
+import me.ferrybig.javacoding.graphical.decompiler.media.CodePaneConfig;
+import me.ferrybig.javacoding.graphical.decompiler.media.UnknownCodePane;
 import static me.ferrybig.javacoding.graphical.decompiler.util.HTMLEscape.escapeHTML;
 
 /**
@@ -36,15 +46,17 @@ public class FindResults extends javax.swing.JDialog implements FindListener {
 
 	private static final Logger LOG = Logger.getLogger(FindResults.class.getName());
 	private static final long serialVersionUID = -2073840936612054472L;
+	private final CodeOverview overview;
 	private final DefaultMutableTreeNode root;
 	private final DefaultMutableTreeNode searching;
 
-	public FindResults(java.awt.Frame parent, Pattern pattern) {
+	public FindResults(java.awt.Frame parent, Pattern pattern, CodeOverview overview) {
 		super(parent, false);
 		root = new DefaultMutableTreeNode("Results for " + pattern);
 		searching = new DefaultMutableTreeNode("Searching...");
 		root.add(searching);
 		initComponents();
+		this.overview = overview;
 	}
 
 	@Override
@@ -74,7 +86,10 @@ public class FindResults extends javax.swing.JDialog implements FindListener {
 				lastNode = findOrCreateNode(root, result.getFile(), true);
 			}
 			((DefaultTreeModel) tree.getModel()).insertNodeInto(
-					new DefaultMutableTreeNode(result.getLineNumber() + ": " + result.getMatch().get(result.getListLineNumber())),
+					new DefaultMutableTreeNode(new FindResultDescription(
+							result.getLineNumber(), result.getFile(),
+							result.getPattern(), result.getMatch(),
+							result.getListLineNumber())),
 					lastNode, lastNode.getChildCount());
 		}
 	}
@@ -131,6 +146,11 @@ public class FindResults extends javax.swing.JDialog implements FindListener {
         getContentPane().setLayout(new GridBagLayout());
 
         tree.setModel(new DefaultTreeModel(root));
+        tree.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent evt) {
+                treeMouseClicked(evt);
+            }
+        });
         scroll.setViewportView(tree);
 
         gridBagConstraints = new GridBagConstraints();
@@ -152,9 +172,55 @@ public class FindResults extends javax.swing.JDialog implements FindListener {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void treeMouseClicked(MouseEvent evt) {//GEN-FIRST:event_treeMouseClicked
+        int selRow = tree.getRowForLocation(evt.getX(), evt.getY());
+		TreePath selPath = tree.getPathForLocation(evt.getX(), evt.getY());
+		if (selRow == -1) {
+			return;
+		}
+		DefaultMutableTreeNode last = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+		if (last == searching || last == root) {
+			return;
+		}
+		String file;
+		if(last.getUserObject() instanceof FindResultDescription) {
+			file = ((FindResultDescription) last.getUserObject()).file;
+		} else {
+			file = last.getUserObject().toString();
+		}
+		if (evt.getClickCount() == 1) {
+			overview.openFile(file);
+		}
+
+    }//GEN-LAST:event_treeMouseClicked
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private JProgressBar progress;
     private JScrollPane scroll;
     private JTree tree;
     // End of variables declaration//GEN-END:variables
+
+	private class FindResultDescription {
+
+		private final int lineNumber;
+		private final String file;
+		private final Pattern pattern;
+		private final List<String> lines;
+		private final int linesOffset;
+
+		public FindResultDescription(int lineNumber, String file, Pattern pattern, List<String> lines, int linesOffset) {
+			this.lineNumber = lineNumber;
+			this.file = file;
+			this.pattern = pattern;
+			this.lines = lines;
+			this.linesOffset = linesOffset;
+		}
+
+		@Override
+		public String toString() {
+			return lineNumber + ":\t" + lines.get(linesOffset);
+		}
+
+	}
+
 }
