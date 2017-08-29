@@ -31,7 +31,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import me.ferrybig.javacoding.graphical.decompiler.CodeOverview;
-import me.ferrybig.javacoding.graphical.decompiler.SearchResult;
 import me.ferrybig.javacoding.graphical.decompiler.TitleBar;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePane;
 import me.ferrybig.javacoding.graphical.decompiler.media.CodePaneConfig;
@@ -89,7 +88,7 @@ public class FindResults extends javax.swing.JDialog implements FindListener {
 					new DefaultMutableTreeNode(new FindResultDescription(
 							result.getLineNumber(), result.getFile(),
 							result.getPattern(), result.getMatch(),
-							result.getListLineNumber())),
+							result.getListLineNumber(), result.getCaretOffset())),
 					lastNode, lastNode.getChildCount());
 		}
 	}
@@ -183,13 +182,16 @@ public class FindResults extends javax.swing.JDialog implements FindListener {
 			return;
 		}
 		String file;
+		int caretOffset;
 		if(last.getUserObject() instanceof FindResultDescription) {
 			file = ((FindResultDescription) last.getUserObject()).file;
+			caretOffset = ((FindResultDescription) last.getUserObject()).caretOffset;
 		} else {
 			file = last.getUserObject().toString();
+			caretOffset = 0;
 		}
 		if (evt.getClickCount() == 1) {
-			overview.openFile(file);
+			overview.openFile(file, caretOffset);
 		}
 
     }//GEN-LAST:event_treeMouseClicked
@@ -207,13 +209,15 @@ public class FindResults extends javax.swing.JDialog implements FindListener {
 		private final Pattern pattern;
 		private final List<String> lines;
 		private final int linesOffset;
+		private final int caretOffset;
 
-		public FindResultDescription(int lineNumber, String file, Pattern pattern, List<String> lines, int linesOffset) {
+		public FindResultDescription(int lineNumber, String file, Pattern pattern, List<String> lines, int linesOffset, int caretOffset) {
 			this.lineNumber = lineNumber;
 			this.file = file;
 			this.pattern = pattern;
 			this.lines = lines;
 			this.linesOffset = linesOffset;
+			this.caretOffset = caretOffset;
 		}
 
 		@Override

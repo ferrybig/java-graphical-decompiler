@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
-import me.ferrybig.javacoding.graphical.decompiler.SearchResult;
 
 
 public interface FindListener {

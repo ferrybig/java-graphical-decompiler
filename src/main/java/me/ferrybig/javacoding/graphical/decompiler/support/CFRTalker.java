@@ -59,7 +59,7 @@ public class CFRTalker {
 	public synchronized void start() {
 		pool = Executors.newFixedThreadPool(MAX_TASKS, (Runnable r) -> {
 			Thread t = new Thread(r);
-			t.setPriority(Thread.NORM_PRIORITY - 2);
+			t.setPriority(Thread.NORM_PRIORITY - 3);
 			t.setDaemon(true);
 			return t;
 		});
@@ -127,7 +127,7 @@ public class CFRTalker {
 	}
 
 	public static void main(String[] args) throws InterruptedException {
-		Thread.currentThread().setPriority(Thread.NORM_PRIORITY - 1);
+		Thread.currentThread().setPriority(Thread.NORM_PRIORITY - 2);
 		List<String> classes = Arrays.asList(args);
 		CFRTalker main = new CFRTalker();
 		boolean started = false;

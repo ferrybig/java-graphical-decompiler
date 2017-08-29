@@ -21,7 +21,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.swing.SwingWorker;
-import me.ferrybig.javacoding.graphical.decompiler.SearchResult;
 
 public class FindWorker extends SwingWorker<Void, SearchResult> {
 
@@ -66,11 +65,13 @@ public class FindWorker extends SwingWorker<Void, SearchResult> {
 		try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
 			String line;
 			int lineNumber = 1;
+			int offset = 0;
 			while ((line = reader.readLine()) != null) {
 				if (pattern.matcher(line).find()) {
-					this.publish(new SearchResult(name, Collections.singletonList(line), pattern, lineNumber, 0));
+					this.publish(new SearchResult(name, Collections.singletonList(line), pattern, lineNumber, 0, offset));
 				}
 				lineNumber++;
+				offset += line.length() + 1;
 			}
 		} catch (IOException err) {
 			LOG.log(Level.WARNING, "Exception during searching of files", err);

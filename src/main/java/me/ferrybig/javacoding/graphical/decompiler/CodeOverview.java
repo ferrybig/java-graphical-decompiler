@@ -147,6 +147,10 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 	}
 
 	public void openFile(String file) {
+		openFile(file, 0);
+	}
+
+	public void openFile(String file, int caretLocation) {
 		if (!openFiles.containsKey(file)) {
 			LOG.info(file);
 			assert knownFiles.containsKey(file);
@@ -170,6 +174,9 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 			resendPriorityLists();
 		} else {
 			tabs.setSelectedIndex(tabs.indexOfTab(file));
+		}
+		if(caretLocation != 0) {
+			openFiles.get(file).setCaretLocation(caretLocation);
 		}
 	}
 

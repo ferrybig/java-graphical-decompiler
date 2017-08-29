@@ -19,6 +19,9 @@ public interface CodePane {
 
 	public CodePane contentUpdated(URL newUrl);
 
+	public default void setCaretLocation(int caretLocation) {
+	}
+
 	public JComponent getContent();
 
 	public Icon getIcon(boolean hasSources);

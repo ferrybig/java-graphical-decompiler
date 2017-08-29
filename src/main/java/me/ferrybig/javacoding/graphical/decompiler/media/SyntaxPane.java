@@ -27,6 +27,8 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 
 	private final String syntax;
 	private static final Logger LOG = Logger.getLogger(SyntaxPane.class.getName());
+	private int caretLocation;
+	private boolean forcedLocation = false;
 
 	public SyntaxPane(CodePaneConfig conf, String syntax) {
 		this.syntax = syntax;
@@ -37,7 +39,11 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 		new StringLoader(conf.getUrl(), t -> {
 			int caret = textPane.getCaretPosition();
 			textPane.setText(t);
-			textPane.setCaretPosition(caret);
+			if(forcedLocation && this.textPane.getText().length() >= caretLocation) {
+				textPane.setCaretPosition(caretLocation);
+			} else {
+				textPane.setCaretPosition(caret);
+			}
 		}, e -> textPane.setText("// " + e)).execute();
 	}
 
@@ -49,6 +55,17 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 	@Override
 	public JComponent getContent() {
 		return this;
+	}
+
+	@Override
+	public void setCaretLocation(int caretLocation) {
+		this.caretLocation = caretLocation;
+		if(this.textPane.getText().length() < caretLocation) {
+			forcedLocation = true;
+		} else {
+			forcedLocation = false;
+			this.textPane.setCaretPosition(caretLocation);
+		}
 	}
 
 	@Override
