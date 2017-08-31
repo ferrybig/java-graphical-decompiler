@@ -5,10 +5,14 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler;
 
+import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.logging.LogRecord;
+import javax.swing.JLabel;
 import static me.ferrybig.javacoding.graphical.decompiler.util.HTMLEscape.escapeHTML;
 
 /**
@@ -47,7 +51,7 @@ public class LogRecordPanel extends javax.swing.JPanel {
 			record.getThrown().printStackTrace(new PrintWriter(writer));
 			txt = writer.toString();
 		}
-		exception.setText("<html>" + escapeHTML(txt));
+		exception.setText("<html>" + escapeHTML(txt).replace("\n", "<br>"));
 	}
 
 	private final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
@@ -60,43 +64,44 @@ public class LogRecordPanel extends javax.swing.JPanel {
 	@SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
-        java.awt.GridBagConstraints gridBagConstraints;
+        GridBagConstraints gridBagConstraints;
 
-        icon = new javax.swing.JLabel();
-        message = new javax.swing.JLabel();
-        date = new javax.swing.JLabel();
-        exception = new javax.swing.JLabel();
+        icon = new JLabel();
+        message = new JLabel();
+        date = new JLabel();
+        exception = new JLabel();
 
-        setLayout(new java.awt.GridBagLayout());
+        setLayout(new GridBagLayout());
 
-        icon.setMaximumSize(new java.awt.Dimension(32, 32));
-        icon.setMinimumSize(new java.awt.Dimension(32, 32));
-        icon.setPreferredSize(new java.awt.Dimension(32, 32));
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        icon.setMaximumSize(new Dimension(32, 32));
+        icon.setMinimumSize(new Dimension(32, 32));
+        icon.setPreferredSize(new Dimension(32, 32));
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridheight = 3;
         add(icon, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 1;
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 0.1;
         add(message, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
-        gridBagConstraints.fill = java.awt.GridBagConstraints.HORIZONTAL;
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.fill = GridBagConstraints.HORIZONTAL;
         gridBagConstraints.weightx = 0.1;
         add(date, gridBagConstraints);
-        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints = new GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
+        gridBagConstraints.anchor = GridBagConstraints.WEST;
         add(exception, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel date;
-    private javax.swing.JLabel exception;
-    private javax.swing.JLabel icon;
-    private javax.swing.JLabel message;
+    private JLabel date;
+    private JLabel exception;
+    private JLabel icon;
+    private JLabel message;
     // End of variables declaration//GEN-END:variables
 }
