@@ -5,16 +5,32 @@
  */
 package me.ferrybig.javacoding.graphical.decompiler.media;
 
+import java.awt.Dimension;
 import me.ferrybig.javacoding.graphical.decompiler.StringLoader;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.swing.Box;
 import javax.swing.Icon;
+import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Token;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -29,6 +45,8 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 	private static final Logger LOG = Logger.getLogger(SyntaxPane.class.getName());
 	private int caretLocation;
 	private boolean forcedLocation = false;
+	private String lastFindText = "";
+	private final List<InlineSearchResult> lastSearch = new ArrayList<>();
 
 	public SyntaxPane(CodePaneConfig conf, String syntax) {
 		this.syntax = syntax;
@@ -39,7 +57,7 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 		new StringLoader(conf.getUrl(), t -> {
 			int caret = textPane.getCaretPosition();
 			textPane.setText(t);
-			if(forcedLocation && this.textPane.getText().length() >= caretLocation) {
+			if (forcedLocation && this.textPane.getText().length() >= caretLocation) {
 				textPane.setCaretPosition(caretLocation);
 			} else {
 				textPane.setCaretPosition(caret);
@@ -60,7 +78,7 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 	@Override
 	public void setCaretLocation(int caretLocation) {
 		this.caretLocation = caretLocation;
-		if(this.textPane.getText().length() < caretLocation) {
+		if (this.textPane.getText().length() < caretLocation) {
 			forcedLocation = true;
 		} else {
 			forcedLocation = false;
@@ -89,6 +107,14 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 
         scrollPane = new RTextScrollPane();
         textPane = new RSyntaxTextArea();
+        findContainer = new JPanel();
+        findLabel = new JLabel();
+        findInput = new JTextField();
+        findSeperator = new JSeparator();
+        findPrevious = new JButton();
+        findNext = new JButton();
+        searchFieldPadding = new Box.Filler(new Dimension(200, 0), new Dimension(200, 0), new Dimension(200, 32767));
+        findMatches = new JLabel();
 
         setLayout(new GridBagLayout());
 
@@ -114,7 +140,83 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
         gridBagConstraints.weightx = 0.1;
         gridBagConstraints.weighty = 0.1;
         add(scrollPane, gridBagConstraints);
+
+        findContainer.setLayout(new GridBagLayout());
+
+        findLabel.setText("Find: ");
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.fill = GridBagConstraints.VERTICAL;
+        gridBagConstraints.weighty = 0.1;
+        findContainer.add(findLabel, gridBagConstraints);
+
+        findInput.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                findNextAction(evt);
+            }
+        });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weighty = 0.1;
+        findContainer.add(findInput, gridBagConstraints);
+
+        findSeperator.setOrientation(SwingConstants.VERTICAL);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.fill = GridBagConstraints.VERTICAL;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new Insets(0, 4, 0, 4);
+        findContainer.add(findSeperator, gridBagConstraints);
+
+        findPrevious.setText("Previous");
+        findPrevious.setEnabled(false);
+        findPrevious.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                findPreviousAction(evt);
+            }
+        });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.fill = GridBagConstraints.VERTICAL;
+        gridBagConstraints.weighty = 0.1;
+        findContainer.add(findPrevious, gridBagConstraints);
+
+        findNext.setText("Next");
+        findNext.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                findNextAction(evt);
+            }
+        });
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.fill = GridBagConstraints.VERTICAL;
+        gridBagConstraints.weighty = 0.1;
+        findContainer.add(findNext, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        findContainer.add(searchFieldPadding, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.anchor = GridBagConstraints.LINE_END;
+        gridBagConstraints.weightx = 0.1;
+        findContainer.add(findMatches, gridBagConstraints);
+
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        add(findContainer, gridBagConstraints);
     }// </editor-fold>//GEN-END:initComponents
+
+	private void redoSearch() {
+		this.lastSearch.clear();
+		lastFindText = findInput.getText();
+		Pattern p = Pattern.compile(lastFindText, Pattern.LITERAL);
+		Matcher matcher = p.matcher(this.textPane.getText());
+		while (matcher.find()) {
+			this.lastSearch.add(new InlineSearchResult(matcher.start(), matcher.end()));
+		}
+		this.findMatches.setText(this.lastSearch.size() + " matches");
+	}
 
     private void textPaneMouseClicked(MouseEvent evt) {//GEN-FIRST:event_textPaneMouseClicked
 		if (!evt.isControlDown()) {
@@ -130,12 +232,66 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 			if (token == null) {
 				return;
 			}
-			LOG.info("Found: " + token);
+			LOG.log(Level.INFO, "Found: {0}", token);
 		}
     }//GEN-LAST:event_textPaneMouseClicked
 
+    private void findNextAction(ActionEvent evt) {//GEN-FIRST:event_findNextAction
+		if (findInput.getText().isEmpty()) {
+			return;
+		}
+		if (!lastFindText.equals(findInput.getText())) {
+			this.redoSearch();
+		}
+		int caret = this.textPane.getCaretPosition();
+		for (InlineSearchResult res : this.lastSearch) {
+			if (res.getOffset() > caret) {
+				this.textPane.setCaretPosition(res.getOffset());
+				this.textPane.moveCaretPosition(res.getLength());
+				return;
+			}
+		}
+		if (this.lastSearch.isEmpty()) {
+			return;
+		}
+		InlineSearchResult res = this.lastSearch.get(0);
+		this.textPane.setCaretPosition(res.getOffset());
+		this.textPane.moveCaretPosition(res.getLength());
+    }//GEN-LAST:event_findNextAction
+
+    private void findPreviousAction(ActionEvent evt) {//GEN-FIRST:event_findPreviousAction
+		// TODO add your handling code here:
+    }//GEN-LAST:event_findPreviousAction
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private JPanel findContainer;
+    private JTextField findInput;
+    private JLabel findLabel;
+    private JLabel findMatches;
+    private JButton findNext;
+    private JButton findPrevious;
+    private JSeparator findSeperator;
     private RTextScrollPane scrollPane;
+    private Box.Filler searchFieldPadding;
     private RSyntaxTextArea textPane;
     // End of variables declaration//GEN-END:variables
+
+	private static class InlineSearchResult {
+
+		private final int offset;
+		private final int length;
+
+		public InlineSearchResult(int offset, int length) {
+			this.offset = offset;
+			this.length = length;
+		}
+
+		public int getOffset() {
+			return offset;
+		}
+
+		public int getLength() {
+			return length;
+		}
+	}
 }
