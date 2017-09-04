@@ -17,17 +17,20 @@ import javax.swing.JComponent;
  */
 public interface CodePane {
 
-	public CodePane contentUpdated(URL newUrl);
+	CodePane contentUpdated(URL newUrl);
 
-	public default void setCaretLocation(int caretLocation) {
+	default void setCaretLocation(int caretLocation) {
 	}
 
-	public JComponent getContent();
+	JComponent getContent();
 
-	public Icon getIcon(boolean hasSources);
+	Icon getIcon(boolean hasSources);
 
-	public default Map<String, Integer> getPriority(boolean focus) {
+	default Map<String, Integer> getPriority(boolean focus) {
 		return Collections.emptyMap();
+	}
+
+	default void handleFocus() {
 	}
 
 }

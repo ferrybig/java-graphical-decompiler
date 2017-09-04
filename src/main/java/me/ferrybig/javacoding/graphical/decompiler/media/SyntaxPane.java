@@ -10,13 +10,16 @@ import me.ferrybig.javacoding.graphical.decompiler.StringLoader;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,7 +47,7 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 	private final String syntax;
 	private static final Logger LOG = Logger.getLogger(SyntaxPane.class.getName());
 	private int caretLocation;
-	private boolean forcedLocation = false;
+	private boolean forcedLocation = true;
 	private String lastFindText = "";
 	private final List<InlineSearchResult> lastSearch = new ArrayList<>();
 
@@ -63,6 +66,11 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 				textPane.setCaretPosition(caret);
 			}
 		}, e -> textPane.setText("// " + e)).execute();
+	}
+
+	@Override
+	public void handleFocus() {
+		this.textPane.requestFocusInWindow();
 	}
 
 	@Override
@@ -251,6 +259,7 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 				return;
 			}
 		}
+		Toolkit.getDefaultToolkit().beep();
 		if (this.lastSearch.isEmpty()) {
 			return;
 		}
@@ -260,7 +269,28 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
     }//GEN-LAST:event_findNextAction
 
     private void findPreviousAction(ActionEvent evt) {//GEN-FIRST:event_findPreviousAction
-		// TODO add your handling code here:
+		if (findInput.getText().isEmpty()) {
+			return;
+		}
+		if (!lastFindText.equals(findInput.getText())) {
+			this.redoSearch();
+		}
+		int caret = this.textPane.getCaretPosition();
+		for (ListIterator<InlineSearchResult> itr = this.lastSearch.listIterator(this.lastSearch.size()); itr.hasPrevious();) {
+			InlineSearchResult res = itr.previous();
+			if (res.getOffset() < caret) {
+				this.textPane.setCaretPosition(res.getOffset());
+				this.textPane.moveCaretPosition(res.getLength());
+				return;
+			}
+		}
+		Toolkit.getDefaultToolkit().beep();
+		if (this.lastSearch.isEmpty()) {
+			return;
+		}
+		InlineSearchResult res = this.lastSearch.get(this.lastSearch.size() - 1);
+		this.textPane.setCaretPosition(res.getOffset());
+		this.textPane.moveCaretPosition(res.getLength());
     }//GEN-LAST:event_findPreviousAction
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

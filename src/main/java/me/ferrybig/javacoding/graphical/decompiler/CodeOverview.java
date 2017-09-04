@@ -178,6 +178,7 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		if(caretLocation != 0) {
 			openFiles.get(file).setCaretLocation(caretLocation);
 		}
+		openFiles.get(file).handleFocus();
 	}
 
 	public void registerDecompiler(AdvancedDecompiler decompiler) {
