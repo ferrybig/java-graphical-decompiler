@@ -117,6 +117,14 @@ public class CodeOverview extends javax.swing.JPanel implements DecompileListene
 		}
 	}
 
+	public void findInFile() {
+		Component pane = tabs.getSelectedComponent();
+		if(pane instanceof CodePane) {
+			CodePane codePane = (CodePane) pane;
+			codePane.handleSearchFocus();
+		}
+	}
+
 	@Override
 	public Path getTemporaryPath() throws IOException {
 		Path tmp = this.tmp;

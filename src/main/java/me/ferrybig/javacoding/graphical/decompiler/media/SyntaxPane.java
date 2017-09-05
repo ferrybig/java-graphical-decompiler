@@ -74,6 +74,11 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
 	}
 
 	@Override
+	public void handleSearchFocus() {
+		this.findInput.requestFocusInWindow();
+	}
+
+	@Override
 	public CodePane contentUpdated(URL newUrl) {
 		return null;
 	}
@@ -175,7 +180,6 @@ public class SyntaxPane extends javax.swing.JPanel implements CodePane {
         findContainer.add(findSeperator, gridBagConstraints);
 
         findPrevious.setText("Previous");
-        findPrevious.setEnabled(false);
         findPrevious.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 findPreviousAction(evt);

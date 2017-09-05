@@ -68,9 +68,6 @@ public class MainForm extends javax.swing.JFrame {
 
         files = new JFileChooser();
         mainBody1 = new MainBody();
-        jToolBar1 = new JToolBar();
-        jButton1 = new JButton();
-        findInFilesAction = new JButton();
         mainMenu = new JMenuBar();
         fileMenu = new JMenu();
         openButton = new JMenuItem();
@@ -78,6 +75,9 @@ public class MainForm extends javax.swing.JFrame {
         menuSeperator = new JPopupMenu.Separator();
         exitButton = new JMenuItem();
         editMenu = new JMenu();
+        jMenu1 = new JMenu();
+        jMenuItem1 = new JMenuItem();
+        jMenuItem2 = new JMenuItem();
 
         files.setFileFilter(new FileNameExtensionFilter("Jar files", "jar", "zip"));
 
@@ -97,36 +97,6 @@ public class MainForm extends javax.swing.JFrame {
         gridBagConstraints.weightx = 0.1;
         gridBagConstraints.weighty = 0.1;
         getContentPane().add(mainBody1, gridBagConstraints);
-
-        jToolBar1.setFloatable(false);
-        jToolBar1.setRollover(true);
-
-        jButton1.setText("Open");
-        jButton1.setFocusable(false);
-        jButton1.setHorizontalTextPosition(SwingConstants.CENTER);
-        jButton1.setVerticalTextPosition(SwingConstants.BOTTOM);
-        jButton1.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                openButtonActionPerformed(evt);
-            }
-        });
-        jToolBar1.add(jButton1);
-
-        findInFilesAction.setText("Find in files");
-        findInFilesAction.setFocusable(false);
-        findInFilesAction.setHorizontalTextPosition(SwingConstants.CENTER);
-        findInFilesAction.setVerticalTextPosition(SwingConstants.BOTTOM);
-        findInFilesAction.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                findInFilesActionActionPerformed(evt);
-            }
-        });
-        jToolBar1.add(findInFilesAction);
-
-        gridBagConstraints = new GridBagConstraints();
-        gridBagConstraints.fill = GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 0.1;
-        getContentPane().add(jToolBar1, gridBagConstraints);
 
         fileMenu.setText("File");
 
@@ -151,6 +121,28 @@ public class MainForm extends javax.swing.JFrame {
 
         editMenu.setText("Edit");
         mainMenu.add(editMenu);
+
+        jMenu1.setText("Find");
+
+        jMenuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.SHIFT_MASK | InputEvent.CTRL_MASK));
+        jMenuItem1.setText("Find in Files");
+        jMenuItem1.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                findInFilesActionActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem1);
+
+        jMenuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_MASK));
+        jMenuItem2.setText("Find in open file");
+        jMenuItem2.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                jMenuItem2ActionPerformed(evt);
+            }
+        });
+        jMenu1.add(jMenuItem2);
+
+        mainMenu.add(jMenu1);
 
         setJMenuBar(mainMenu);
     }// </editor-fold>//GEN-END:initComponents
@@ -181,6 +173,14 @@ public class MainForm extends javax.swing.JFrame {
 
 		new FindDialog(this, view, true).setVisible(true);
     }//GEN-LAST:event_findInFilesActionActionPerformed
+
+    private void jMenuItem2ActionPerformed(ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+        CodeOverview view = this.mainBody1.getSelectedTab();
+		if (view == null) {
+			return;
+		}
+		view.findInFile();
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
 
 	/**
 	 * @param args the command line arguments
@@ -275,9 +275,9 @@ public class MainForm extends javax.swing.JFrame {
     private JMenuItem exitButton;
     private JMenu fileMenu;
     private JFileChooser files;
-    private JButton findInFilesAction;
-    private JButton jButton1;
-    private JToolBar jToolBar1;
+    private JMenu jMenu1;
+    private JMenuItem jMenuItem1;
+    private JMenuItem jMenuItem2;
     private MainBody mainBody1;
     private JMenuBar mainMenu;
     private JPopupMenu.Separator menuSeperator;

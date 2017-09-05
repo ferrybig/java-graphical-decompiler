@@ -33,4 +33,7 @@ public interface CodePane {
 	default void handleFocus() {
 	}
 
+	default void handleSearchFocus() {
+	}
+
 }
