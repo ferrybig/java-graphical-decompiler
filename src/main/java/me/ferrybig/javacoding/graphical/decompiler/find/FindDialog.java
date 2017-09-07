@@ -10,42 +10,36 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.Beans;
-import java.io.IOException;
 import java.text.ParseException;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
-import javax.swing.JFormattedTextField;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-import javax.swing.LayoutStyle;
 import javax.swing.WindowConstants;
-import javax.swing.text.DefaultFormatterFactory;
 import me.ferrybig.javacoding.graphical.decompiler.CodeOverview;
 
 /**
  *
  * @author Fernando
  */
-public class FindDialog extends javax.swing.JDialog {
+public final class FindDialog extends javax.swing.JDialog {
 
 	private static final long serialVersionUID = -4835269298085063549L;
 	private final CodeOverview overview;
-	private final Pattern filePattern = Pattern.compile(".*\\.class", Pattern.CASE_INSENSITIVE);
 
 	public FindDialog(java.awt.Frame parent, CodeOverview overview, boolean modal) {
 		super(parent, modal);
 		this.overview = overview;
 		initComponents();
+	}
+
+	public FindDialog(java.awt.Frame parent, CodeOverview overview, boolean modal, String file) {
+		this(parent, overview, modal);
+		this.fileTypes.setSelectedItem(Pattern.quote(file));
 	}
 
 	private Pattern tryCompile() throws ParseException {
@@ -57,6 +51,16 @@ public class FindDialog extends javax.swing.JDialog {
 		if (caseInsensitivity.isSelected()) {
 			flags |= Pattern.CASE_INSENSITIVE;
 		}
+		try {
+			return Pattern.compile(pattern, flags);
+		} catch (PatternSyntaxException ex) {
+			throw (ParseException) new ParseException(pattern, ex.getIndex()).initCause(ex);
+		}
+	}
+	private Pattern tryCompileFiles() throws ParseException {
+		String pattern = fileTypes.getSelectedItem().toString();
+		int flags = 0;
+		flags |= Pattern.CASE_INSENSITIVE;
 		try {
 			return Pattern.compile(pattern, flags);
 		} catch (PatternSyntaxException ex) {
@@ -87,7 +91,6 @@ public class FindDialog extends javax.swing.JDialog {
         fileTypes.setEditable(true);
         fileTypes.setModel(new DefaultComboBoxModel<>(new String[] { "\\.(?:class|java)$", "\\.class$", "\\.java$" }));
         fileTypes.setToolTipText("Not implemented at the moment");
-        fileTypes.setEnabled(false);
         fileTypes.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 searchSubmit(evt);
@@ -141,8 +144,10 @@ public class FindDialog extends javax.swing.JDialog {
 
     private void searchSubmit(ActionEvent evt) {//GEN-FIRST:event_searchSubmit
 		Pattern p;
+		Pattern filePattern;
 		try {
 			p = this.tryCompile();
+			filePattern = tryCompileFiles();
 		} catch (ParseException ex) {
 			JOptionPane.showMessageDialog(this, ex.getCause().toString(), "Invalid regex", JOptionPane.ERROR_MESSAGE);
 			return;
