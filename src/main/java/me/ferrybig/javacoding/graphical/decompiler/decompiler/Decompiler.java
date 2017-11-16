@@ -14,18 +14,18 @@ import java.util.Map;
  */
 public interface Decompiler {
 
-	public void setOptions(List<String> options);
+	void setOptions(List<String> options);
 
-	public void setPriority(Map<String, Integer> prio);
+	void setPriority(Map<String, Integer> prio);
 
-	public boolean isSmart();
+	boolean isSmart();
 
-	public boolean isStarted();
+	boolean isStarted();
 
-	public boolean isDone();
+	boolean isDone();
 
-	public void start();
+	void start();
 
-	public void stop();
+	void stop();
 
 }
