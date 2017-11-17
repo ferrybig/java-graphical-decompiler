@@ -15,17 +15,17 @@ import java.nio.file.Path;
  */
 public interface DecompileListener {
 
-	public void fileFound(String name);
+	void fileFound(String name);
 
-	public void fileDecompiled(String name, URL url);
+	void fileDecompiled(String name, URL url);
 
-	public void decompileDone();
+	void decompileDone();
 
-	public void decompilePerClassStarted(int total);
+	void decompilePerClassStarted(int total);
 
-	public void exceptionCaugth(Throwable ex);
+	void exceptionCaugth(Throwable ex);
 
-	public void setProgress(int progress, int totalFiles, int filesDecompiled);
+	void setProgress(int progress, int totalFiles, int filesDecompiled);
 
-	public Path getTemporaryPath() throws IOException;
+	Path getTemporaryPath() throws IOException;
 }
