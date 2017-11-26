@@ -50,6 +50,7 @@ public enum FileType {
 	}
 
 	public static FileType findFileType(String file) {
+		file = file.toLowerCase();
 		int subString = 0;
 		do {
 			FileType type = byAlias.get(subString == 0 ? file : file.substring(subString));
