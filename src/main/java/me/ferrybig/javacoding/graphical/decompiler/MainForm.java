@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -200,7 +201,6 @@ public class MainForm extends javax.swing.JFrame {
 			LOG.log(Level.INFO, "Starting...");
 			final Config config = new Config();
 			config.rescanCfr();
-			LOG.log(Level.INFO, "Our application is location in: {0}", config.getRunningLocation());
 			MainForm mainForm = new MainForm(config);
 			mainForm.mainBody1.registerLoggingHandler();
 			mainForm.setVisible(true);
@@ -210,24 +210,45 @@ public class MainForm extends javax.swing.JFrame {
 	}
 
 	private void checkCFRExists(String[] openAfterLaunch) {
+		boolean shouldOpen = true;
 		if (mainBody1.getConfig().getCfr() == null) {
 			int showConfirmDialog = JOptionPane.showConfirmDialog(this, "CFR missing, either download manually from http://www.benf.org/other/cfr/ or press ok to download it");
 			if (showConfirmDialog == JOptionPane.OK_OPTION) {
-				new CfrDownloader().execute();
+				final CfrDownloader cfrDownloader = new CfrDownloader(() -> {
+					for (String s : openAfterLaunch) {
+						mainBody1.openFile(new File(s));
+					}
+				});
+				cfrDownloader.execute();
+				shouldOpen = false;
 			}
 		}
-		for (String s : openAfterLaunch) {
-			mainBody1.openFile(new File(s));
+		if (shouldOpen) {
+			for (String s : openAfterLaunch) {
+				mainBody1.openFile(new File(s));
+			}
 		}
 	}
 
 	private final class CfrDownloader extends SwingWorker<Void, Void> {
 
+		private final Runnable doneTask;
+
+		public CfrDownloader(Runnable doneTask) {
+			this.doneTask = doneTask;
+		}
+
 		@Override
 		protected void done() {
 			super.done();
-			JOptionPane.showMessageDialog(MainForm.this, "CFR download complete");
+			try {
+				this.get();
+				JOptionPane.showMessageDialog(MainForm.this, "CFR download complete");
+			} catch (InterruptedException | ExecutionException ex) {
+				JOptionPane.showMessageDialog(MainForm.this, "CFR download error: " + ex.toString());
+			}
 			MainForm.this.mainBody1.getConfig().rescanCfr();
+			this.doneTask.run();
 		}
 
 		@Override
@@ -235,14 +256,14 @@ public class MainForm extends javax.swing.JFrame {
 			URL homePage = new URL("http://www.benf.org/other/cfr/");
 			URL cfrDownload = null;
 			String cfrName = null;
-			Pattern pageDownload = Pattern.compile("<a href=\"cfr_0_\\d*.jar\">(cfr_0_\\d*.jar)</a>");
+			Pattern pageDownload = Pattern.compile("<a href=\"(https://www.benf.org/other/cfr/cfr[-_]0[._]\\d*.jar)\">(cfr[-_]0[._]\\d*.jar)</a>");
 			try (BufferedReader reader = new BufferedReader(new InputStreamReader(homePage.openStream()))) {
 				String line;
 				while ((line = reader.readLine()) != null) {
 					Matcher matcher = pageDownload.matcher(line);
 					if (matcher.find()) {
-						cfrDownload = new URL("http://www.benf.org/other/cfr/" + matcher.group(1));
-						cfrName = matcher.group(1);
+						cfrDownload = new URL(matcher.group(1));
+						cfrName = matcher.group(2);
 					}
 				}
 			}

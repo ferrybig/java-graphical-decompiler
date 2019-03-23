@@ -39,6 +39,7 @@ public final class Config {
 	public Optional<File> getRunningLocation() {
 		try {
 			URL url = Config.class.getResource(Config.class.getSimpleName().replace(".", "/") + ".class");
+			LOG.log(Level.INFO, "Url of myself: {0}", url);
 			if (url.getProtocol().equals("jar") && url.toString().startsWith("jar:file")) {
 
 				final JarURLConnection connection
@@ -63,11 +64,12 @@ public final class Config {
 	}
 
 	public void rescanCfr() {
-		final File runningLocation = getRunningLocation().orElse(new File("."));
-		LOG.log(Level.INFO, "Our application is location in: {0}", runningLocation);
+		final Optional<File> runningLocationOptional = getRunningLocation();
+		final File runningLocation = runningLocationOptional.orElse(new File("."));
+		LOG.log(Level.INFO, "Our application is location in: {0}, {1}", new Object[]{ runningLocation, runningLocationOptional.isPresent() ? "" : "<working-directory>"});
 		File[] toScan = new File[]{runningLocation, new File(runningLocation, "lib")};
 		File latestVersion = null;
-		Predicate<String> cfrJar = Pattern.compile("cfr_0_\\d{1,3}.jar").asPredicate();
+		Predicate<String> cfrJar = Pattern.compile("^cfr[-_]0[._]\\d{1,3}.jar$").asPredicate();
 		for (File dir : toScan) {
 			final File[] listFiles = dir.listFiles((File pathname) -> cfrJar.test(pathname.getName()));
 			if (listFiles == null) {
